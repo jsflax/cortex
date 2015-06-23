@@ -1,0 +1,7 @@
+run
+compile
+exit
+build
+build cortex
+run
+compile
