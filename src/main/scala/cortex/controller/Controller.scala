@@ -41,8 +41,21 @@ object Controller {
 trait Controller {
   import cortex.controller.Controller.HttpMethod._
 
+  /**
+   * Implicit conversion from string to byte array. This
+   * acts as a convenience method so that a consumer of our
+   * api can return a [[String]] without thinking twice.
+   * @param string string to implicitly convert
+   * @return string as byte array
+   */
   implicit def toByteArray(string: String): Array[Byte] = string.getBytes
 
+  /**
+   * Register an endpoint with our server.
+   * @param endpoint endpoint as a string (e.g., /tickets)
+   * @param handler handler for responding to request
+   * @param methods accepted http methods (GET, POST, etc.)
+   */
   final def register(endpoint: String,
                      handler: (Response) => Option[Array[Byte]],
                      methods: HttpMethod*): Unit = {
