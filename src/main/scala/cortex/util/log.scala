@@ -1,7 +1,8 @@
 package cortex.util
 
 /**
- */
+ * Internal logger.
+ */ //TODO: Connect to offline store for ... logging (duh)
 object log {
   private val Blue = "\033[94m"
   private val Green = "\033[92m"

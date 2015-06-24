@@ -4,6 +4,10 @@ import cortex.controller.Controller
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
+/**
+ * Main application trait. Should be extending by an object.
+ * This is the applications equivalent of void main(string: Args[])
+ */
 trait Cortex extends App {
   /**
    * Abstract method so that inheritor must

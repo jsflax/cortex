@@ -2,24 +2,35 @@ package cortex.controller
 
 import cortex.controller.Controller.Action
 import cortex.controller.model.Response
-
 import language.postfixOps
 import scala.collection.mutable
 import scala.language.implicitConversions
 
 /**
+ * Master controller object. Maintains a map of all
+ * of the registered controllers, which contain
+ * all of the registered endpoints.
  */
 object Controller {
+
+  /**
+   * List of http 1.1 method specs.
+   */
   implicit object HttpMethod extends Enumeration {
     type HttpMethod = Value
     val GET, POST, PATCH, DELETE, PUT = Value
   }
 
+  /**
+   * List of http 1.1 content type specs.
+   *///TODO: incomplete list
   object ContentType extends Enumeration {
     type ContentType = Value
 
     val NoneType = Value
 
+    // map all values by their string representation to
+    // make them easily retrievable
     lazy val valueMap = values map (v => v.toString -> v) toMap
 
     val ApplicationOctetStream = Value("application/octet-stream")
