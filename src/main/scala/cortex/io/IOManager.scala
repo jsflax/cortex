@@ -79,7 +79,7 @@ protected class IOManager(port: Int) {
 
     // read top line of input
     line = bufferedReader.readLine()
-    log trace line
+    log info line
 
     // endpoint will be the second term on this line
     var endpoint = line.split(" ")(1)
@@ -102,7 +102,7 @@ protected class IOManager(port: Int) {
     var contentType = ContentType.NoneType
     do {
       line = bufferedReader.readLine()
-      log trace line
+      log info line
       if (httpMethod.get != HttpMethod.GET) {
         val contentHeader = "Content-Length: "
         val contentTypeHeader = "Accept: "
@@ -110,6 +110,7 @@ protected class IOManager(port: Int) {
         if (line.startsWith(contentHeader)) {
           contentLength = Integer.parseInt(line.substring(contentHeader.length()))
         } else if (line.startsWith(contentTypeHeader)) {
+          log warn line
           contentType = ContentType.valueMap.get(
             line.substring(contentTypeHeader.length())
           ).get
@@ -117,6 +118,8 @@ protected class IOManager(port: Int) {
       }
     } while (!line.equals(""))
 
+
+    log v contentType.toString
 
     var queryParameters: String = null
     var body: IndexedSeq[Byte] = null
