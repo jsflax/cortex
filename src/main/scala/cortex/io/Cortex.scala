@@ -33,8 +33,3 @@ trait Cortex extends App {
     wait()
   }
 }
-
-object Test extends Cortex {
-  override def port = 9999
-  override def controllers = Seq()
-}
