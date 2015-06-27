@@ -1,4 +1,4 @@
-package cortex.controller.model
+package cortex.model
 
 import java.net.URLDecoder
 import cortex.controller.Controller.ContentType

@@ -2,8 +2,9 @@ import java.io.File
 
 import cortex.controller.Controller
 import cortex.controller.Controller.HttpMethod
-import cortex.io.{Cortex, View}
+import cortex.io.Cortex
 import cortex.util.test
+import cortex.view.View
 import org.scalatest.{Matchers, FlatSpec}
 
 import scala.io.Source

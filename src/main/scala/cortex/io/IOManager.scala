@@ -6,7 +6,7 @@ import java.net.{Socket, ServerSocket}
 import cortex.controller.Controller
 import cortex.controller.Controller._
 import cortex.controller.Controller.HttpMethod.HttpMethod
-import cortex.controller.model._
+import cortex.model._
 import cortex.util.log
 
 import scala.concurrent.Future

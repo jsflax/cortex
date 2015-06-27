@@ -2,6 +2,7 @@ package cortex.io
 
 import cortex.controller.Controller
 import cortex.util.log
+import cortex.view.View
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 

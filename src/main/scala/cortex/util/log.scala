@@ -1,5 +1,7 @@
 package cortex.util
 
+import scala.language.implicitConversions
+
 /**
  * Internal logger.
  */ //TODO: Connect to offline store for ... logging (duh)
@@ -20,6 +22,8 @@ object log {
         s".${caller.getMethodName}:L${caller.getLineNumber}]: $msg$Clear"
     )
   }
+
+  implicit def anyToString(any: Any): String = any.toString
 
   def info(implicit msg: String) = print(Blue)
   def error(implicit msg: String) = print(Red)

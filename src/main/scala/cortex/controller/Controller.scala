@@ -1,7 +1,7 @@
 package cortex.controller
 
 import cortex.controller.Controller.Action
-import cortex.controller.model.Response
+import cortex.model.Response
 import language.postfixOps
 import scala.collection.mutable
 import scala.language.implicitConversions

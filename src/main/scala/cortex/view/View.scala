@@ -1,4 +1,4 @@
-package cortex.io
+package cortex.view
 
 import java.io.File
 
