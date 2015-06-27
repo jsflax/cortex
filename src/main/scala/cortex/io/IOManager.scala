@@ -188,6 +188,7 @@ protected class IOManager(port: Int) {
     // open new server socket on selected port
     implicit val server = new ServerSocket(port)
     socketLoop
+    server.close()
   }
 
   /**

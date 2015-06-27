@@ -1,7 +1,6 @@
 package cortex.io
 
 import cortex.controller.Controller
-import cortex.util.log
 import cortex.view.View
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -38,12 +37,10 @@ trait Cortex extends App {
   // pre-initialize controllers
   controllers.foreach(_.hashCode())
 
+  def singleTestLoop() = Future { new IOManager(port).singleTestLoop() }
+
   // run server on initialization of [[App]]
-  if (this.getClass.isAnnotationPresent(classOf[cortex.util.test])) {
-    Future {
-      new IOManager(port).singleTestLoop()
-    }
-  } else {
+  if (!this.getClass.isAnnotationPresent(classOf[cortex.util.test])) {
     Future {
       new IOManager(port).loop()
     }

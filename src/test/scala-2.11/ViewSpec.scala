@@ -3,7 +3,7 @@ import java.io.File
 import cortex.controller.Controller
 import cortex.controller.Controller.HttpMethod
 import cortex.io.Cortex
-import cortex.util.test
+import cortex.util.{log, test}
 import cortex.view.View
 import org.scalatest.{Matchers, FlatSpec}
 
@@ -33,8 +33,6 @@ class ViewSpec extends FlatSpec with Matchers {
     override def views = Seq(view)
   }
 
-  app.hashCode()
-
   "A dynamic view" should "equal the matching file" in {
     Source.fromFile(
       "/Users/jason/git/cortex/src/test/resources/dashboard.html"
@@ -42,6 +40,8 @@ class ViewSpec extends FlatSpec with Matchers {
   }
 
   "A controller" should "respond with an html view" in {
+    app.singleTestLoop()
+
     Http(
       "http://localhost:9999"
     ).asString.body should equal (view.dashboard().toString)

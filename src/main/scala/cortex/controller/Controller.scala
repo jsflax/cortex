@@ -59,6 +59,11 @@ trait Controller {
    * @return string as byte array
    */
   implicit def toByteArray(string: String): Array[Byte] = string.getBytes
+  implicit def optToByteArrayOpt(optString: Option[String]): Option[Array[Byte]] =
+    optString match {
+      case Some(str) => Option(str)
+      case None => Option.empty[Array[Byte]]
+    }
 
   /**
    * Register an endpoint with our server.
