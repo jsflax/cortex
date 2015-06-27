@@ -69,7 +69,9 @@ trait Controller {
   final def register(endpoint: String,
                      handler: (Response) => Option[Array[Byte]],
                      methods: HttpMethod*): Unit = {
-    Controller.actionRegistrants +=
-      s"/$endpoint" -> Action(handler, methods)
+    val coercedEndpoint =
+      if (endpoint.startsWith("/")) endpoint
+      else s"/$endpoint"
+    Controller.actionRegistrants += coercedEndpoint -> Action(handler, methods)
   }
 }

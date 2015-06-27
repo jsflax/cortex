@@ -1,7 +1,7 @@
 package cortex.io
 
 import java.io._
-import java.net.ServerSocket
+import java.net.{Socket, ServerSocket}
 
 import cortex.controller.Controller
 import cortex.controller.Controller._
@@ -40,7 +40,7 @@ protected class IOManager(port: Int) {
    * @param input [[Input]] model that we've read from previous method
    * @param out output stream we are writing to
    */
-  @inline def writeOutput(input: Input, out: DataOutputStream) = {
+  @inline private def writeOutput(input: Input, out: DataOutputStream) = {
     // check if the http method is registered for this endpoint
     // TODO: yield error message
     if (input.action.methods.contains(input.httpMethod)) {
@@ -74,7 +74,7 @@ protected class IOManager(port: Int) {
    * @param bufferedReader input stream
    * @return [[Input]] model (endpoint, body, http method)
    */
-  @inline def readInput(bufferedReader: BufferedReader): Option[Input] = {
+  @inline private def readInput(bufferedReader: BufferedReader): Option[Input] = {
     var line: String = null
 
     // read top line of input
@@ -118,9 +118,6 @@ protected class IOManager(port: Int) {
       }
     } while (!line.equals(""))
 
-
-    log v contentType.toString
-
     var queryParameters: String = null
     var body: IndexedSeq[Byte] = null
 
@@ -155,42 +152,54 @@ protected class IOManager(port: Int) {
     }
   }
 
+  @inline private def ioLoop(implicit socket: Socket) = {
+    // retrieve input stream from socket
+    val inputStream = new BufferedReader(
+      new InputStreamReader(socket.getInputStream)
+    )
+
+    // read data from the input stream
+    val input = readInput(inputStream)
+
+    // if there were no errors reading the data, write output
+    if (input.isDefined) {
+      writeOutput(input.get, new DataOutputStream(socket.getOutputStream))
+    }
+
+    // close the socket
+    socket.close()
+  }
+
+  @inline private def socketLoop(implicit server: ServerSocket) = {
+    try {
+      // system-level wait while we literally wait on a request
+      implicit val socket = server.accept()
+
+      // spawn off a new Future once a request has been accepted
+      Future {
+        ioLoop
+      }
+    } catch {
+      case e: Exception => log error e.getMessage
+    }
+  }
+
+  def singleTestLoop() = {
+    // open new server socket on selected port
+    implicit val server = new ServerSocket(port)
+    socketLoop
+  }
+
   /**
    * Main IO loop.
    */
   def loop() = {
     // open new server socket on selected port
-    val server = new ServerSocket(port)
+    implicit val server = new ServerSocket(port)
 
     // begin main loop
     while (true) {
-      try {
-
-        // system-level wait while we literally wait on a request
-        val socket = server.accept()
-
-        // spawn off a new Future once a request has been accepted
-        Future {
-
-          // retrieve input stream from socket
-          val inputStream = new BufferedReader(
-            new InputStreamReader(socket.getInputStream)
-          )
-
-          // read data from the input stream
-          val input = readInput(inputStream)
-
-          // if there were no errors reading the data, write output
-          if (input.isDefined) {
-            writeOutput(input.get, new DataOutputStream(socket.getOutputStream))
-          }
-
-          // close the socket
-          socket.close()
-        }
-      } catch {
-        case e: Exception => log error e.getMessage
-      }
+      socketLoop
     }
   }
 }

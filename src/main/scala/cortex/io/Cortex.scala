@@ -1,6 +1,7 @@
 package cortex.io
 
 import cortex.controller.Controller
+import cortex.util.log
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -23,13 +24,32 @@ trait Cortex extends App {
    */
   def controllers: Seq[_ <: Controller]
 
-  // run server on initialization of [[App]]
-  Future {
-    new IOManager(port).loop()
-  }
+  /**
+   * Abstract method so that inheritor must
+   * list their sequence of views
+   * @return seq of views
+   */
+  def views: Seq[_ <: View]
 
-  // native wait
-  this.synchronized {
-    wait()
+  // pre-initialize views
+  views.foreach(_.hashCode())
+
+  // pre-initialize controllers
+  controllers.foreach(_.hashCode())
+
+  // run server on initialization of [[App]]
+  if (this.getClass.isAnnotationPresent(classOf[cortex.util.test])) {
+    Future {
+      new IOManager(port).singleTestLoop()
+    }
+  } else {
+    Future {
+      new IOManager(port).loop()
+    }
+
+    // native wait
+    this.synchronized {
+      wait()
+    }
   }
 }
