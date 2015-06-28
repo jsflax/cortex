@@ -104,16 +104,16 @@ protected class IOManager(port: Int) {
       line = bufferedReader.readLine()
       log info line
       if (httpMethod.get != HttpMethod.GET) {
-        val contentHeader = "Content-Length: "
-        val contentTypeHeader = "Accept: "
+        val contentHeader = "content-length: "
+        val contentTypeHeader = "content-type: "
 
-        if (line.startsWith(contentHeader)) {
+        if (line.toLowerCase.startsWith(contentHeader)) {
           contentLength = Integer.parseInt(line.substring(contentHeader.length()))
-        } else if (line.startsWith(contentTypeHeader)) {
+        } else if (line.toLowerCase.startsWith(contentTypeHeader)) {
           log warn line
-          contentType = ContentType.valueMap.get(
-            line.substring(contentTypeHeader.length())
-          ).get
+          contentType = ContentType.valueMap.getOrElse(
+            line.substring(contentTypeHeader.length()), ContentType.NoneType
+          )
         }
       }
     } while (!line.equals(""))

@@ -1,6 +1,8 @@
 package cortex.io
 
 import cortex.controller.Controller
+import cortex.db.DB
+import cortex.util.log
 import cortex.view.View
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -31,11 +33,32 @@ trait Cortex extends App {
    */
   def views: Seq[_ <: View]
 
+  /**
+   * Convenience class to pass around database information.
+   * @param address address of db
+   * @param user user name
+   * @param password password
+   */
+  protected case class DBConnection(address: String,
+                                    user: String,
+                                    password: String)
+  /**
+   *
+   */
+  def dbConnection: DBConnection = null
+
   // pre-initialize views
   views.foreach(_.hashCode())
 
   // pre-initialize controllers
   controllers.foreach(_.hashCode())
+
+  // initialize db
+  if (dbConnection != null) {
+    DB.initialize(
+      DBConnection.unapply(dbConnection).orNull
+    )
+  }
 
   def singleTestLoop() = Future { new IOManager(port).singleTestLoop() }
 

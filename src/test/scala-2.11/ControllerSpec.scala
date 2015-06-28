@@ -1,7 +1,7 @@
 import cortex.controller.Controller
 import cortex.controller.Controller.HttpMethod
 import cortex.io.Cortex
-import cortex.util.{log, test}
+import cortex.util.test
 import org.scalatest.{Matchers, FlatSpec}
 
 import scalaj.http.Http
@@ -23,6 +23,18 @@ class ControllerSpec extends FlatSpec with Matchers {
 
       Option((one.toInt + two.toInt).toString)
     }, HttpMethod.GET)
+
+    import cortex.util.util._
+
+    register("/updateEmail", { resp =>
+      val id: String = resp.params("id")
+      val email: String = resp.params("email")
+
+      assert(id forall Character.isDigit)
+      assert(isValidEmail(email))
+
+      Option("success")
+    }, HttpMethod.POST)
   }
 
   @test object app extends Cortex {
@@ -32,7 +44,7 @@ class ControllerSpec extends FlatSpec with Matchers {
     override def views = Seq()
   }
 
-  "An endpoint" should "respond with 'Hello world'" in {
+  "An endpoint" should "respond to a GET with 'Hello world'" in {
     app.singleTestLoop()
 
     Http(
@@ -40,11 +52,20 @@ class ControllerSpec extends FlatSpec with Matchers {
     ).asString.body should equal ("Hello world")
   }
 
-  "An endpoint" should "calculate the sum of the following numbers" in {
+  "An endpoint" should "GET the sum of the following numbers" in {
     app.singleTestLoop()
 
     Http(
       "http://localhost:9998/sum"
     ).params(Seq("one" -> "1", "two" -> "2")).asString.body should equal ("3")
+  }
+
+  "An endpoint" should "POST and consume our parameters" in {
+    app.singleTestLoop()
+
+    Http(
+      "http://localhost:9998/updateEmail"
+    ).postForm(Seq("id" -> "1", "email" -> "brady.thompson@gmail.com"))
+     .asString.body should equal ("success")
   }
 }

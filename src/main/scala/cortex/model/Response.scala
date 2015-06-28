@@ -44,13 +44,20 @@ import Response._
  * @param entity request body if applicable
  * @param contentType requested content type
  */
-final case class Response(private val queryParams: String,
+final case class Response(queryParams: String,
                           httpMethod: HttpMethod,
                           entity: Seq[Byte],
                           contentType: ContentType.Value) {
+
   /** coerced query parameters if applicable */
   val params: Map[String, String] =
-    if (queryParams != null) queryParams else null
+    if (queryParams != null) {
+      queryParams
+    } else if (contentType == ContentType.ApplicationFormUrlEncoded) {
+      new String(entity.toArray)
+    } else {
+      null
+    }
 
   /** posted json parameters if applicable */
   lazy val json =

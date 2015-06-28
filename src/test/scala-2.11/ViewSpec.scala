@@ -3,7 +3,7 @@ import java.io.File
 import cortex.controller.Controller
 import cortex.controller.Controller.HttpMethod
 import cortex.io.Cortex
-import cortex.util.{log, test}
+import cortex.util.test
 import cortex.view.View
 import org.scalatest.{Matchers, FlatSpec}
 
