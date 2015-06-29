@@ -1,7 +1,6 @@
 import java.io.File
 
-import cortex.controller.Controller
-import cortex.controller.Controller.HttpMethod
+import cortex.controller.{ContentType, HttpMethod, Controller}
 import cortex.io.Cortex
 import cortex.util.test
 import cortex.view.View
@@ -22,8 +21,8 @@ class ViewSpec extends FlatSpec with Matchers {
 
   object controller extends Controller {
       register("/", { resp =>
-        Option(view.dashboard().toString)
-      }, HttpMethod.GET)
+        Option(view.dashboard())
+      }, ContentType.TextHtml, HttpMethod.GET)
   }
 
   @test object app extends Cortex {
@@ -36,14 +35,18 @@ class ViewSpec extends FlatSpec with Matchers {
   "A dynamic view" should "equal the matching file" in {
     Source.fromFile(
       "/Users/jason/git/cortex/src/test/resources/dashboard.html"
-    ).getLines().mkString("\n") should equal (view.dashboard().toString)
+    ).getLines().mkString("\n") should equal (
+      new String(view.dashboard())
+    )
   }
 
   "A controller" should "respond with an html view" in {
     app.singleTestLoop()
 
-    Http(
+    new String(Http(
       "http://localhost:9999"
-    ).asString.body should equal (view.dashboard().toString)
+    ).asString.body) should equal (
+      new String(view.dashboard())
+    )
   }
 }

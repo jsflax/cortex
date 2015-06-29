@@ -1,10 +1,46 @@
 package cortex.controller
 
 import cortex.controller.Controller.Action
-import cortex.model.Response
+import cortex.model.Request
 import language.postfixOps
 import scala.collection.mutable
 import scala.language.implicitConversions
+
+/**
+ * List of http 1.1 method specs.
+ */
+object HttpMethod extends Enumeration {
+  type HttpMethod = Value
+  val GET, POST, PATCH, DELETE, PUT = Value
+}
+
+/**
+ * List of http 1.1 content type specs.
+ */
+object ContentType extends Enumeration {
+  type ContentType = Value
+
+  // map all values by their string representation to
+  // make them easily retrievable
+  lazy val valueMap = values map (v => v.toString -> v) toMap
+
+  val NoneType = Value
+  val AllType = Value("*/*")
+  val ApplicationOctetStream = Value("application/octet-stream")
+  val ApplicationJson = Value("application/json")
+  val ApplicationFormUrlEncoded = Value("application/x-www-form-urlencoded")
+
+  val TextHtml = Value("text/html")
+  val TextJavascript = Value("text/javascript")
+  val TextCss = Value("text/css")
+
+  val ImageWebp = Value("image/webp")
+  val ImagePng = Value("image/png")
+  val ImagePngBase64 = Value("image/png;base64")
+}
+
+import HttpMethod._
+import ContentType._
 
 /**
  * Master controller object. Maintains a map of all
@@ -13,43 +49,20 @@ import scala.language.implicitConversions
  */
 object Controller {
 
-  /**
-   * List of http 1.1 method specs.
-   */
-  implicit object HttpMethod extends Enumeration {
-    type HttpMethod = Value
-    val GET, POST, PATCH, DELETE, PUT = Value
-  }
+  case class Message(response: Option[Array[Byte]],
+                     cookie: Option[String] = None,
+                     redirect: Option[String] = None)
 
-  /**
-   * List of http 1.1 content type specs.
-   *///TODO: incomplete list
-  object ContentType extends Enumeration {
-    type ContentType = Value
+  case class Action[Response](handler: (Response) => Message,
+                              contentType: ContentType,
+                              methods: Seq[HttpMethod])
 
-    // map all values by their string representation to
-    // make them easily retrievable
-    lazy val valueMap = values map (v => v.toString -> v) toMap
-
-    val NoneType = Value
-    val AllType = Value("*/*")
-    val ApplicationOctetStream = Value("application/octet-stream")
-    val ApplicationJson = Value("application/json")
-    val ApplicationFormUrlEncoded = Value("application/x-www-form-urlencoded")
-
-    val TextHtml = Value("text/html")
-  }
-
-  import cortex.controller.Controller.HttpMethod._
-
-  case class Action[Response](handler: (Response) => Option[Array[Byte]],
-                                  methods: Seq[HttpMethod])
-
-  lazy val actionRegistrants = new mutable.HashMap[String, Action[Response]]()
+  lazy val actionRegistrants = new mutable.HashMap[String, Action[Request]]()
 }
 
 trait Controller {
-  import cortex.controller.Controller.HttpMethod._
+  import cortex.controller.Controller.Message
+
 
   /**
    * Implicit conversion from string to byte array. This
@@ -64,6 +77,12 @@ trait Controller {
       case Some(str) => Option(str)
       case None => Option.empty[Array[Byte]]
     }
+  implicit def optStrToMessage(opt: Option[String]): Message =
+    Message(opt)
+  implicit def optToMessage(opt: Option[Array[Byte]]): Message =
+    Message(opt)
+
+  implicit def noneToMessage(opt: Option[Nothing]): Message = Message(None)
 
   /**
    * Register an endpoint with our server.
@@ -72,11 +91,15 @@ trait Controller {
    * @param methods accepted http methods (GET, POST, etc.)
    */
   final def register(endpoint: String,
-                     handler: (Response) => Option[Array[Byte]],
-                     methods: HttpMethod*): Unit = {
+                     handler: (Request) => Message,
+                     contentType: ContentType, methods: HttpMethod*): Unit = {
     val coercedEndpoint =
       if (endpoint.startsWith("/")) endpoint
       else s"/$endpoint"
-    Controller.actionRegistrants += coercedEndpoint -> Action(handler, methods)
+    Controller.actionRegistrants += coercedEndpoint -> Action(
+      handler,
+      contentType,
+      methods
+    )
   }
 }

@@ -1,18 +1,19 @@
 import cortex.controller.Controller
-import cortex.controller.Controller.HttpMethod
 import cortex.io.Cortex
-import cortex.util.test
+import cortex.util.{log, test}
 import org.scalatest.{Matchers, FlatSpec}
 
 import scalaj.http.Http
 
+import cortex.controller.ContentType._
+import cortex.controller.HttpMethod._
 /**
  */
 class ControllerSpec extends FlatSpec with Matchers {
   object controller extends Controller {
     register("/hello", { resp =>
       Option("Hello world")
-    }, HttpMethod.GET)
+    }, TextHtml, GET)
 
     register("/sum", { resp =>
       val one: String = resp.params("one")
@@ -22,7 +23,7 @@ class ControllerSpec extends FlatSpec with Matchers {
       assert(two forall Character.isDigit)
 
       Option((one.toInt + two.toInt).toString)
-    }, HttpMethod.GET)
+    }, TextHtml, GET)
 
     import cortex.util.util._
 
@@ -34,7 +35,7 @@ class ControllerSpec extends FlatSpec with Matchers {
       assert(isValidEmail(email))
 
       Option("success")
-    }, HttpMethod.POST)
+    }, AllType, POST)
   }
 
   @test object app extends Cortex {

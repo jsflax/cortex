@@ -3,7 +3,6 @@ package cortex.view
 import java.io.File
 
 import scala.annotation.tailrec
-import scala.io.Source
 import scala.language.dynamics
 
 /* Created by Jason Flax 6/27/2015 */
@@ -15,23 +14,38 @@ trait View extends Dynamic {
    */
   protected def viewDir: File
 
+  protected[view] def encoding = scala.io.Codec.UTF8
+
   /**
    * Declare partial function type to be added
    * to our map (allows for all generic methods).
    */
-  type GenFn = PartialFunction[Seq[Any],Any]
-
-  import collection.mutable
+  type GenFn = PartialFunction[Seq[Any], Array[Byte]]
 
   /** Dynamic method storage */
-  private val fields =
-    mutable.Map.empty[String, GenFn]
-      .withDefault{ key => throw new NoSuchFieldError(key) }
+  // create a dynamic method for each file so that the
+  // consumer can have easy access, e.g. views.homepage()
+  // TODO: cache file data as strings
+  protected[view] lazy val fields: Map[String, (String, GenFn)] =
+    listFiles(viewDir).map { file =>
+      val ext = """.\w+$""".r
+      this.updateDynamic(
+        file.getName.replaceFirst("[.][^.]+$", "")
+      )(
+        ext.findFirstIn(file.getName).getOrElse("") ->
+          { case _ =>
+            val source = scala.io.Source.fromFile(file)(encoding)
+            val byteArray = source.map(_.toByte).toArray
+            source.close()
+            byteArray
+          }
+      )
+    }.toMap.withDefault { key => throw new NoSuchFieldError(key) }
 
-  def selectDynamic(key: String) = fields(key)
-  def updateDynamic(key: String)(value: GenFn) = fields(key) = value
-  def applyDynamic(key: String)(args: Any*) = fields(key)(args)
-  def applyDynamicNamed(name: String)(args: (String, Any)*) = fields(name)(args)
+  def selectDynamic(key: String) = fields(key)._2
+  def updateDynamic(key: String)(value: (String, GenFn)) = key -> value
+  def applyDynamic(key: String)(args: (Any, Any)*): Array[Byte] = fields(key)._2(args)
+  def applyDynamicNamed(name: String)(args: (String, Any)*) = fields(name)._2(args)
 
   /**
    * Traverse all files in view directory using tail recursion.
@@ -51,14 +65,5 @@ trait View extends Dynamic {
           listFiles(tail, head :: result)
       }
     listFiles(List(file), Nil)
-  }
-
-  // create a dynamic method for each file so that the
-  // consumer can have easy access, e.g. views.homepage()
-  // TODO: cache file data as strings
-  listFiles(viewDir).foreach { file =>
-    this.updateDynamic(file.getName.replaceFirst("[.][^.]+$", "")) { case _ =>
-      Source.fromFile(file).getLines() mkString "\n"
-    }
   }
 }

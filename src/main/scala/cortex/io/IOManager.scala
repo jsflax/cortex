@@ -3,9 +3,10 @@ package cortex.io
 import java.io._
 import java.net.{Socket, ServerSocket}
 
-import cortex.controller.Controller
+import cortex.controller.ContentType.ContentType
+import cortex.controller.{Controller, ContentType, HttpMethod}
 import cortex.controller.Controller._
-import cortex.controller.Controller.HttpMethod.HttpMethod
+import cortex.controller.HttpMethod.HttpMethod
 import cortex.model._
 import cortex.util.log
 
@@ -28,11 +29,11 @@ protected class IOManager(port: Int) {
    * @param contentType accepted content-types
    */
   protected case class Input(endpoint: String,
-                           body: IndexedSeq[Byte],
-                           queryParams: String,
-                           httpMethod: HttpMethod,
-                           action: Action[Response],
-                           contentType: ContentType.Value)
+                             body: IndexedSeq[Byte],
+                             queryParams: String,
+                             httpMethod: HttpMethod,
+                             action: Action[Request],
+                             contentType: ContentType)
 
   /**
    * Handle the input and write to the output stream,
@@ -42,26 +43,38 @@ protected class IOManager(port: Int) {
    */
   @inline private def writeOutput(input: Input, out: DataOutputStream) = {
     // check if the http method is registered for this endpoint
-    // TODO: yield error message
     if (input.action.methods.contains(input.httpMethod)) {
 
       // call the handler on the registered action to parse the input
       // and fetch the output (response)
-      val response = input.action.handler(
-        Response(
+      val message = input.action.handler(
+        Request(
           input.queryParams, input.httpMethod, input.body, input.contentType
         )
       )
 
       // if successful, write the output following http 1.1 specs
-      if (response.isDefined) {
-        out.writeBytes("HTTP/1.1 200 OK\r\n")
+      if (message.response.isDefined) {
+        if (message.redirect.isDefined) {
+          out.writeBytes("HTTP/1.1 302 Found\r\n")
+          out.writeBytes(s"Location: ${message.redirect.get}\r\n")
+        } else {
+          out.writeBytes("HTTP/1.1 200 OK\r\n")
+        }
+        if (message.cookie.isDefined) {
+          out.writeBytes(s"Set-Cookie: ${message.cookie}\r\n")
+        }
         out.writeBytes("Server: WebServer\r\n")
-        out.writeBytes(s"Content-Type: ${input.contentType}\r\n")
-        out.writeBytes(s"Content-Length: ${response.get.length}\r\n")
+        out.writeBytes(s"Content-Type: ${input.action.contentType}\r\n")
+        out.writeBytes(s"Content-Length: ${message.response.get.length}\r\n")
         out.writeBytes("Connection: close\r\n")
         out.writeBytes("\r\n")
-        out.write(response.get)
+        out.write(message.response.get)
+      } else {
+        out.writeBytes("HTTP/1.1 400 Bad request\r\n")
+        out.writeBytes("Server: WebServer\r\n")
+        out.writeBytes("Connection: close\r\n")
+        out.writeBytes("\r\n")
       }
     } else {
       log error

@@ -1,15 +1,15 @@
 package cortex.model
 
 import java.net.URLDecoder
-import cortex.controller.Controller.ContentType
-import cortex.controller.Controller.HttpMethod._
+import cortex.controller.ContentType
+import cortex.controller.HttpMethod._
 import spray.json.JsonParser
 import scala.language.implicitConversions
 
 /**
  * Response helper object.
  */
-object Response {
+object Request {
   /**
    * Convenience method to decode url params to a normal string
    * @param raw raw, encoded url params
@@ -35,7 +35,7 @@ object Response {
   }
 }
 
-import Response._
+import Request._
 
 /**
  * Datum for response information.
@@ -44,7 +44,7 @@ import Response._
  * @param entity request body if applicable
  * @param contentType requested content type
  */
-final case class Response(queryParams: String,
+final case class Request(queryParams: String,
                           httpMethod: HttpMethod,
                           entity: Seq[Byte],
                           contentType: ContentType.Value) {
