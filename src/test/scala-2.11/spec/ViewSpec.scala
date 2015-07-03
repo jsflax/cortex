@@ -1,10 +1,12 @@
+package spec
+
 import java.io.File
 
-import cortex.controller.{ContentType, HttpMethod, Controller}
+import cortex.controller.{ContentType, Controller, HttpMethod}
 import cortex.io.Cortex
 import cortex.util.test
 import cortex.view.View
-import org.scalatest.{Matchers, FlatSpec}
+import org.scalatest.{FlatSpec, Matchers}
 
 import scala.io.Source
 import scalaj.http.Http

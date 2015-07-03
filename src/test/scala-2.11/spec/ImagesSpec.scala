@@ -1,8 +1,10 @@
+package spec
+
 import java.io.File
 
 import cortex.io.Cortex
 import cortex.util.test
-import cortex.view.{Images, Assets}
+import cortex.view.Images
 import org.scalatest.{FlatSpec, Matchers}
 
 import scala.io.Source

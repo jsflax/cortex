@@ -32,7 +32,7 @@ protected class IOManager(port: Int) {
                              body: IndexedSeq[Byte],
                              queryParams: String,
                              httpMethod: HttpMethod,
-                             action: Action[Request],
+                             action: Action,
                              contentType: ContentType)
 
   /**
@@ -49,7 +49,11 @@ protected class IOManager(port: Int) {
       // and fetch the output (response)
       val message = input.action.handler(
         Request(
-          input.queryParams, input.httpMethod, input.body, input.contentType
+          queryParams = input.queryParams,
+          httpMethod = input.httpMethod,
+          entity = input.body,
+          extractedParams = input.action.actionContext.map(input.endpoint),
+          contentType = input.contentType
         )
       )
 
@@ -62,7 +66,7 @@ protected class IOManager(port: Int) {
           out.writeBytes("HTTP/1.1 200 OK\r\n")
         }
         if (message.cookie.isDefined) {
-          out.writeBytes(s"Set-Cookie: ${message.cookie}\r\n")
+          out.writeBytes(s"Set-Cookie: ${message.cookie.get}\r\n")
         }
         out.writeBytes("Server: WebServer\r\n")
         out.writeBytes(s"Content-Type: ${input.action.contentType}\r\n")
@@ -144,7 +148,9 @@ protected class IOManager(port: Int) {
 
     // get and check that this endpoint is in our registered
     // in one of our controllers
-    val action = Controller.actionRegistrants.get(endpoint)
+    val action = Controller.actionRegistrants.collectFirst {
+      case ctx if ctx.actionContext.regex.findFirstIn(endpoint).isDefined => ctx
+    }
 
     // if it is defined, read the body and return in the input
     // else, return None, as we aren't going to handle this further

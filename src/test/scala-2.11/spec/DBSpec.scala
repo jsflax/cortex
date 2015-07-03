@@ -1,7 +1,9 @@
+package spec
+
 import cortex.io.Cortex
 import cortex.util.test
 import org.scalatest.matchers.{MatchResult, Matcher}
-import org.scalatest.{Matchers, FlatSpec}
+import org.scalatest.{FlatSpec, Matchers}
 import scalikejdbc._
 
 /**

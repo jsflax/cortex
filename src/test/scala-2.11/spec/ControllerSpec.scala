@@ -1,12 +1,13 @@
-import cortex.controller.Controller
-import cortex.io.Cortex
-import cortex.util.{log, test}
-import org.scalatest.{Matchers, FlatSpec}
-
-import scalaj.http.Http
+package spec
 
 import cortex.controller.ContentType._
+import cortex.controller.Controller
 import cortex.controller.HttpMethod._
+import cortex.io.Cortex
+import cortex.util.test
+import org.scalatest.{FlatSpec, Matchers}
+
+import scalaj.http.Http
 /**
  */
 class ControllerSpec extends FlatSpec with Matchers {
@@ -36,6 +37,25 @@ class ControllerSpec extends FlatSpec with Matchers {
 
       Option("success")
     }, AllType, POST)
+
+    register(w"/user/${'id}/email", { resp =>
+      resp.httpMethod match {
+        case GET =>
+          val id: String = resp.params("id")
+          assert(id forall Character.isDigit)
+
+          Option("success")
+        case PUT =>
+          val id: String = resp.params("id")
+
+          assert(id forall Character.isDigit)
+          assert(isValidEmail(
+            resp.params("email")
+          ))
+          Option("success")
+        case _ => None
+      }
+    }, ApplicationJson, GET, PUT)
   }
 
   @test object app extends Cortex {
@@ -68,5 +88,22 @@ class ControllerSpec extends FlatSpec with Matchers {
       "http://localhost:9998/updateEmail"
     ).postForm(Seq("id" -> "1", "email" -> "brady.thompson@gmail.com"))
      .asString.body should equal ("success")
+  }
+
+  "A REST endpoint" should "pass us data" in {
+    app.singleTestLoop()
+
+    Http(
+      "http://localhost:9998/user/10/email"
+    ).asString.body should equal ("success")
+  }
+
+  "A REST endpoint" should "consume our parameters" in {
+    app.singleTestLoop()
+
+    Http(
+      "http://localhost:9998/user/10/email"
+    ).postForm(Seq("email" -> "brady.thompson@gmail.com"))
+      .method("PUT").asString.body should equal ("success")
   }
 }

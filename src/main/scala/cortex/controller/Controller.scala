@@ -1,7 +1,7 @@
 package cortex.controller
 
 import cortex.controller.Controller.Action
-import cortex.model.Request
+import cortex.model.{ActionContext, Request}
 import language.postfixOps
 import scala.collection.mutable
 import scala.language.implicitConversions
@@ -53,11 +53,12 @@ object Controller {
                      cookie: Option[String] = None,
                      redirect: Option[String] = None)
 
-  case class Action[Response](handler: (Response) => Message,
-                              contentType: ContentType,
-                              methods: Seq[HttpMethod])
+  case class Action(handler: (Request) => Message,
+                    contentType: ContentType,
+                    actionContext: ActionContext,
+                    methods: Seq[HttpMethod])
 
-  lazy val actionRegistrants = new mutable.HashMap[String, Action[Request]]()
+  lazy val actionRegistrants = new mutable.ListBuffer[Action]()
 }
 
 trait Controller {
@@ -72,34 +73,38 @@ trait Controller {
    * @return string as byte array
    */
   implicit def toByteArray(string: String): Array[Byte] = string.getBytes
+
   implicit def optToByteArrayOpt(optString: Option[String]): Option[Array[Byte]] =
     optString match {
       case Some(str) => Option(str)
       case None => Option.empty[Array[Byte]]
     }
+
   implicit def optStrToMessage(opt: Option[String]): Message =
     Message(opt)
+
   implicit def optToMessage(opt: Option[Array[Byte]]): Message =
     Message(opt)
 
   implicit def noneToMessage(opt: Option[Nothing]): Message = Message(None)
 
+  implicit def stringToActionContext(string: String): ActionContext =
+    ActionContext(string)(Seq())
+
   /**
    * Register an endpoint with our server.
-   * @param endpoint endpoint as a string (e.g., /tickets)
+   * @param actionContext endpoint as a string (e.g., /tickets)
    * @param handler handler for responding to request
    * @param methods accepted http methods (GET, POST, etc.)
    */
-  final def register(endpoint: String,
+  final def register(actionContext: ActionContext,
                      handler: (Request) => Message,
-                     contentType: ContentType, methods: HttpMethod*): Unit = {
-    val coercedEndpoint =
-      if (endpoint.startsWith("/")) endpoint
-      else s"/$endpoint"
-    Controller.actionRegistrants += coercedEndpoint -> Action(
+                     contentType: ContentType,
+                     methods: HttpMethod*): Unit =
+    Controller.actionRegistrants += Action(
       handler,
       contentType,
+      actionContext,
       methods
     )
-  }
 }

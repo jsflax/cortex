@@ -43,21 +43,25 @@ import Request._
  * @param httpMethod http method being called
  * @param entity request body if applicable
  * @param contentType requested content type
+ * @param extractedParams params extracted from wildcard url
+ * @param cookie cookies passed up with request
  */
 final case class Request(queryParams: String,
-                          httpMethod: HttpMethod,
-                          entity: Seq[Byte],
-                          contentType: ContentType.Value) {
+                         httpMethod: HttpMethod,
+                         entity: Seq[Byte],
+                         contentType: ContentType.Value,
+                         extractedParams: Map[String, String] = Map.empty,
+                         cookie: Option[String] = None) {
 
   /** coerced query parameters if applicable */
   val params: Map[String, String] =
-    if (queryParams != null) {
-      queryParams
+    extractedParams ++ (if (queryParams != null) {
+      parseQueryString(queryParams)
     } else if (contentType == ContentType.ApplicationFormUrlEncoded) {
-      new String(entity.toArray)
+      parseQueryString(new String(entity.toArray))
     } else {
-      null
-    }
+      Map.empty[String, String]
+    })
 
   /** posted json parameters if applicable */
   lazy val json =
