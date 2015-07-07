@@ -53,8 +53,7 @@ trait View extends Dynamic {
    * @return list of all files
    */
   private def listFiles(file: File): List[File] = {
-    @tailrec
-    def listFiles(files: List[File], result: List[File]): List[File] =
+    @tailrec def listFiles(files: List[File], result: List[File]): List[File] =
       files match {
         case Nil => result
         case head :: tail if head.isDirectory =>

@@ -31,6 +31,7 @@ protected class IOManager(port: Int) {
   protected case class Input(endpoint: String,
                              body: IndexedSeq[Byte],
                              queryParams: String,
+                             cookie: Option[String],
                              httpMethod: HttpMethod,
                              action: Action,
                              contentType: ContentType)
@@ -53,7 +54,8 @@ protected class IOManager(port: Int) {
           httpMethod = input.httpMethod,
           entity = input.body,
           extractedParams = input.action.actionContext.map(input.endpoint),
-          contentType = input.contentType
+          contentType = input.contentType,
+          cookie = input.cookie
         )
       )
 
@@ -117,20 +119,23 @@ protected class IOManager(port: Int) {
     // retrieve content length and content type
     var contentLength = 0
     var contentType = ContentType.NoneType
+    var cookie = Option.empty[String]
+
     do {
       line = bufferedReader.readLine()
       log info line
       if (httpMethod.get != HttpMethod.GET) {
         val contentHeader = "content-length: "
         val contentTypeHeader = "content-type: "
-
+        val cookieHeader = "cookie: "
         if (line.toLowerCase.startsWith(contentHeader)) {
           contentLength = Integer.parseInt(line.substring(contentHeader.length()))
         } else if (line.toLowerCase.startsWith(contentTypeHeader)) {
-          log warn line
-          contentType = ContentType.valueMap.getOrElse(
-            line.substring(contentTypeHeader.length()), ContentType.NoneType
-          )
+          val types = line.substring(contentTypeHeader.length()).trim.split(';')
+          contentType =
+            ContentType.valueMap.filterKeys(types.contains(_)).values.head
+        } else if (line.toLowerCase.startsWith(cookieHeader)) {
+          cookie = Option(line.substring(cookieHeader.length()))
         }
       }
     } while (!line.equals(""))
@@ -149,12 +154,14 @@ protected class IOManager(port: Int) {
     // get and check that this endpoint is in our registered
     // in one of our controllers
     val action = Controller.actionRegistrants.collectFirst {
-      case ctx if ctx.actionContext.regex.findFirstIn(endpoint).isDefined => ctx
+      case ctx if endpoint.matches(ctx.actionContext.regex.toString()) => ctx
     }
 
     // if it is defined, read the body and return in the input
     // else, return None, as we aren't going to handle this further
     if (action.isDefined) {
+      log d action.get.actionContext.endpoint
+
       if (httpMethod.get != HttpMethod.GET) {
         val bodyStream: IndexedSeq[Byte] =
           for (i <- 0 until contentLength)
@@ -164,7 +171,13 @@ protected class IOManager(port: Int) {
         }
       }
       Option(Input(
-        endpoint, body, queryParameters, httpMethod.get, action.get, contentType
+        endpoint,
+        body,
+        queryParameters,
+        cookie,
+        httpMethod.get,
+        action.get,
+        contentType
       ))
     } else {
       None

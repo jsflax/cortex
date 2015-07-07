@@ -37,6 +37,7 @@ object ContentType extends Enumeration {
   val ImageWebp = Value("image/webp")
   val ImagePng = Value("image/png")
   val ImagePngBase64 = Value("image/png;base64")
+  val ImageIco = Value("image/ico")
 }
 
 import HttpMethod._
