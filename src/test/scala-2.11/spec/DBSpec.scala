@@ -8,7 +8,7 @@ import scalikejdbc._
 
 /**
  */
-class DBSpec extends FlatSpec with Matchers {
+class DBSpec extends BaseSpec {
   import cortex.db.DB._
   case class Person(id: Long,
                     firstName: String,
@@ -33,8 +33,8 @@ class DBSpec extends FlatSpec with Matchers {
     override def views = Seq()
     override def dbConnection = DBConnection(
       "localhost:3306/conf",
-      "root",
-      "root"
+      config.user,
+      config.password
     )
   }
 

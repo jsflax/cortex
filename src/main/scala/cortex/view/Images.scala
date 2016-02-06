@@ -16,7 +16,7 @@ trait Images extends View with Controller {
     val favOpt = Option(favicon.map(_.toByte).toArray)
     favicon.close()
     favOpt
-  }, ContentType.ImageIco, HttpMethod.GET)
+  }, ContentType.ImagePng, HttpMethod.GET)
 
   for ((fileName, extAndGenFunc) <- fields) {
     register(s"/images/$fileName${extAndGenFunc._1}", { resp =>

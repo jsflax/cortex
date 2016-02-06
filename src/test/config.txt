@@ -1,0 +1,2 @@
+user=cortex_user
+pass=cortex_pass

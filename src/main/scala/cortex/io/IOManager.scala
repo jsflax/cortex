@@ -101,7 +101,7 @@ protected class IOManager(port: Int) {
     log info line
 
     // endpoint will be the second term on this line
-    var endpoint = line.split(" ")(1)
+    var endpoint = line.split(" ")(1).trim
 
     // this line also starts with the http method
     // check our HttpMethods enum for a valid httpMethod
@@ -151,6 +151,11 @@ protected class IOManager(port: Int) {
       queryParameters = epSplit(1)
     }
 
+    log.v(endpoint)
+    log.v(Controller.actionRegistrants.map { act =>
+        act.actionContext.coercedEndpoint.r.toString()
+    }.mkString(" /// "))
+
     // get and check that this endpoint is in our registered
     // in one of our controllers
     val action = Controller.actionRegistrants.collectFirst {
@@ -166,7 +171,7 @@ protected class IOManager(port: Int) {
         val bodyStream: IndexedSeq[Byte] =
           for (i <- 0 until contentLength)
             yield bufferedReader.read().asInstanceOf[Byte]
-        if (bodyStream.size > 0) {
+        if (bodyStream.nonEmpty) {
           body = bodyStream
         }
       }
@@ -180,6 +185,7 @@ protected class IOManager(port: Int) {
         contentType
       ))
     } else {
+      log e s"invalid endpoint: $endpoint"
       None
     }
   }

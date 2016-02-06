@@ -38,6 +38,9 @@ object ContentType extends Enumeration {
   val ImagePng = Value("image/png")
   val ImagePngBase64 = Value("image/png;base64")
   val ImageIco = Value("image/ico")
+
+  val FontOpenType = Value("application/x-font-opentype")
+  val FontTrueType = Value("application/x-font-truetype")
 }
 
 import HttpMethod._

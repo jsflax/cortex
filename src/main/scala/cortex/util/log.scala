@@ -6,6 +6,8 @@ import scala.language.implicitConversions
  * Internal logger.
  */ //TODO: Connect to offline store for ... logging (duh)
 object log {
+  var on: Boolean = true
+
   private val Blue = "\033[94m"
   private val Green = "\033[92m"
   private val Yellow = "\033[93m"
@@ -15,12 +17,12 @@ object log {
   private val Cyan = "\033[36m"
 
   private def print(color: String)(implicit msg: String) = {
-    val stackTrace = Thread.currentThread().getStackTrace
-    val caller = stackTrace(5)
-    println(
-      s"$color[${stackTrace(2).getMethodName}][${caller.getClassName}" +
-        s".${caller.getMethodName}:L${caller.getLineNumber}]: $msg$Clear"
-    )
+    if (on) {
+      val stackTrace = Thread.currentThread().getStackTrace
+      println(
+        s"$color[${stackTrace(2).getMethodName}] $msg$Clear"
+      )
+    }
   }
 
   implicit def anyToString(any: Any): String = any.toString

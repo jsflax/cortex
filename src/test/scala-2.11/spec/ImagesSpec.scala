@@ -1,21 +1,25 @@
 package spec
 
-import java.io.File
+import java.io.{FileInputStream, File}
 
 import cortex.io.Cortex
 import cortex.util.test
 import cortex.view.Images
 import org.scalatest.{FlatSpec, Matchers}
 
-import scala.io.Source
+import scala.io.{BufferedSource, Source}
 
 /**
   */
-class ImagesSpec extends FlatSpec with Matchers {
+class ImagesSpec extends BaseSpec {
 
    object images extends Images {
+     override def favicon = new BufferedSource(
+       new FileInputStream("src/test/images/conf_room.png"),
+       1024
+     )
      override def viewDir = new File(
-       "/Users/jason/git/cortex/src/test/images/"
+       "src/test/images/"
      )
    }
 
@@ -30,7 +34,7 @@ class ImagesSpec extends FlatSpec with Matchers {
 
    "A dynamic image file" should "equal the matching file" in {
      Source.fromFile(
-       "/Users/jason/git/cortex/src/test/images/conf_room.png"
+       "src/test/images/conf_room.png"
      )(scala.io.Codec.ISO8859).map(
          _.toByte
        ).toArray should equal (images.conf_room())

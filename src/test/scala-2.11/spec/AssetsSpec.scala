@@ -11,11 +11,11 @@ import scala.io.Source
 
 /**
  */
-class AssetsSpec extends FlatSpec with Matchers {
+class AssetsSpec extends BaseSpec {
 
   object assets extends Assets {
     override def viewDir = new File(
-      "/Users/jason/git/cortex/src/test/assets/"
+      "src/test/assets/"
     )
   }
 
@@ -30,7 +30,7 @@ class AssetsSpec extends FlatSpec with Matchers {
 
   "A dynamic javascript file" should "equal the matching file" in {
     Source.fromFile(
-      "/Users/jason/git/cortex/src/test/assets/test.js"
+      "src/test/assets/test.js"
     ).map(
         _.toByte
       ).toArray should equal (assets.test())

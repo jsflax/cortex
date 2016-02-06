@@ -13,11 +13,11 @@ import scalaj.http.Http
 
 /**
  */
-class ViewSpec extends FlatSpec with Matchers {
+class ViewSpec extends BaseSpec {
 
   object view extends View {
     override def viewDir = new File(
-      "/Users/jason/git/cortex/src/test/resources/"
+      "src/test/resources/"
     )
   }
 

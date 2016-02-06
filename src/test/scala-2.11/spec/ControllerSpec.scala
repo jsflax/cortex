@@ -10,7 +10,7 @@ import org.scalatest.{FlatSpec, Matchers}
 import scalaj.http.Http
 /**
  */
-class ControllerSpec extends FlatSpec with Matchers {
+class ControllerSpec extends BaseSpec {
   object controller extends Controller {
     register("/hello", { resp =>
       Option("Hello world")

@@ -13,6 +13,8 @@ trait Assets extends View with Controller {
     }, extAndGenFunc._1 match {
       case ".css" => ContentType.TextCss
       case ".js" => ContentType.TextJavascript
+      case ".ttf" => ContentType.FontTrueType
+      case ".otf" => ContentType.FontOpenType
       case _ => ContentType.TextHtml
     }, HttpMethod.GET)
   }
