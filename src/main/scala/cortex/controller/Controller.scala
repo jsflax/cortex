@@ -2,6 +2,7 @@ package cortex.controller
 
 import cortex.controller.Controller.Action
 import cortex.model.{ActionContext, Request}
+import spray.json._
 import language.postfixOps
 import scala.collection.mutable
 import scala.language.implicitConversions
@@ -69,11 +70,36 @@ trait Controller {
   import cortex.controller.Controller.Message
 
 
+  implicit val strFormat: JsonFormat[String] =
+    new JsonFormat[String] {
+      override def read(value: JsValue) = value.asInstanceOf[JsString].value
+      override def write(str: String) = JsString(str)
+    }
+
+  implicit val intFormat: JsonFormat[Int] =
+    new JsonFormat[Int] {
+      override def read(value: JsValue) = value.asInstanceOf[JsNumber].value.toInt
+      override def write(str: Int) = JsNumber(str)
+    }
+
+  implicit val longFormat: JsonFormat[Long] =
+    new JsonFormat[Long] {
+      override def read(value: JsValue) = value.asInstanceOf[JsNumber].value.toLong
+      override def write(str: Long) = JsNumber(str)
+    }
+
+  implicit val boolFormat: JsonFormat[Boolean] =
+    new JsonFormat[Boolean] {
+      override def read(value: JsValue) = value.asInstanceOf[JsBoolean].value
+      override def write(str: Boolean) = JsBoolean(str)
+    }
+
   /**
    * Implicit conversion from string to byte array. This
    * acts as a convenience method so that a consumer of our
    * api can return a [[String]] without thinking twice.
-   * @param string string to implicitly convert
+    *
+    * @param string string to implicitly convert
    * @return string as byte array
    */
   implicit def toByteArray(string: String): Array[Byte] = string.getBytes
@@ -97,7 +123,8 @@ trait Controller {
 
   /**
    * Register an endpoint with our server.
-   * @param actionContext endpoint as a string (e.g., /tickets)
+    *
+    * @param actionContext endpoint as a string (e.g., /tickets)
    * @param handler handler for responding to request
    * @param methods accepted http methods (GET, POST, etc.)
    */
