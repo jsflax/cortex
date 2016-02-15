@@ -1,55 +1,21 @@
-package cortex.io
+package cortex.app
 
 import java.io.File
 
 import cortex.controller.Controller
-import cortex.db.DB
+import cortex.db.SqlDB
+import cortex.io.{ClosedIOManager, IOManager}
+import cortex.util.log
 import cortex.view.View
-import scala.concurrent.Future
-import scala.concurrent.ExecutionContext.Implicits.global
-
-import scala.language.dynamics
 
 /**
   * Main application trait. Should be extending by an object.
   * This is the applications equivalent of void main(string: Args[])
   */
-trait Cortex extends App {
-
-  class Config(file: Option[File]) extends Dynamic {
-
-    if (file.isEmpty) {
-      throw new Exception("Config file has not been set.")
-    }
-
-    /**
-      * Declare partial function type to be added
-      * to our map (allows for all generic methods).
-      */
-    type GenFn = PartialFunction[Seq[Any], Array[Byte]]
-
-    /** Dynamic method storage */
-    // create a dynamic method for each key value pair so that the
-    // consumer can have easy access, e.g. config.username()
-    // TODO: cache file data as strings
-    protected lazy val fields: Map[String, String] = {
-      scala.io.Source.fromFile(file.get).getLines().map { unsplitKvp =>
-        val splitKvp = unsplitKvp.split("=")
-        updateDynamic(splitKvp(0))(splitKvp(1))
-      }.toMap.withDefault { key => throw new NoSuchFieldError(key) }
-    }
-
-
-    def selectDynamic(key: String) = fields(key)
-
-    def updateDynamic(key: String)(value: String) = key -> value
-
-    def applyDynamic(key: String)(args: (Any, Any)*): String = fields(key)
-    def applyDynamicNamed(name: String)(args: (String, Any)*) = fields(name)
-  }
+trait Cortex {
 
   /**
-    * Abstract method so that inheritor must
+    * Abstract val so that inheritor must
     * choose a port for their server to run on.
     *
     * @return port number
@@ -72,6 +38,7 @@ trait Cortex extends App {
     */
   def views: Seq[_ <: View]
 
+  def ioManagers: Seq[_ <: IOManager] = Seq(new ClosedIOManager(port))
 
   /**
     * Config file containing sensitive values and general configuration
@@ -113,24 +80,27 @@ trait Cortex extends App {
 
   // initialize db
   if (dbConnection != null) {
-    DB.initialize(
-      DBConnection.unapply(dbConnection).orNull
-    )
-  }
-
-  def singleTestLoop() = Future {
-    new IOManager(port).singleTestLoop()
-  }
-
-  // run server on initialization of [[App]]
-  if (!this.getClass.isAnnotationPresent(classOf[cortex.util.test])) {
-    Future {
-      new IOManager(port).loop()
+    try {
+      SqlDB.initialize(
+        DBConnection.unapply(dbConnection).orNull
+      )
+    } catch {
+      case e: Exception => log e
+        s"Failed to initialize SqlDB: ${e.getMessage}"
     }
+  }
+
+  def start(): Unit = {
+    // run server on initialization of [[App]]
+    ioManagers.foreach(io => io.loop())
 
     // native wait
     this.synchronized {
       wait()
     }
+  }
+
+  def shutdown() = {
+    ioManagers.foreach(io => io.shutdown())
   }
 }

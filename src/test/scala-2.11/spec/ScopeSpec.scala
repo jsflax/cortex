@@ -22,9 +22,7 @@ class ScopeSpec extends BaseSpec {
   "A new class" should "apply scope" in {
     val commit = Commit(100, "auth", "msg")
 
-    import Scope._
-
-    print(new Scope("author", "message", "scooby")
-      .scope(commit).add("b" -> 7).value.prettyPrint)
+//    print(new Scope("author", "message", "scooby")
+//      .scope(commit).add("b" -> 7).value.prettyPrint)
   }
 }

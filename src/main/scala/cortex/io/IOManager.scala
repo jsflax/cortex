@@ -1,7 +1,7 @@
 package cortex.io
 
 import java.io._
-import java.net.{Socket, ServerSocket}
+import java.net.{InetSocketAddress, Socket, ServerSocket}
 
 import cortex.controller.ContentType.ContentType
 import cortex.controller.{Controller, ContentType, HttpMethod}
@@ -10,90 +10,106 @@ import cortex.controller.HttpMethod.HttpMethod
 import cortex.model._
 import cortex.util.log
 
-import scala.concurrent.Future
-import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext.global
 
 /**
- * Essentially our server, this manages the input and output
- * to and fro the server.
- */
-protected class IOManager(port: Int) {
+  * Essentially our server, this manages the input and output
+  * to and fro the server.
+  */
+abstract class IOManager(port: Int,
+                         executionContext: ExecutionContext = global) {
+  implicit val _executionContext = executionContext
+
+  // open new server socket on selected port
+  lazy val server = {
+    val ss = new ServerSocket()
+    ss.setReuseAddress(true)
+    ss.bind(new InetSocketAddress(port))
+    ss
+  }
+
+  @volatile var isRunning = false
 
   /**
-   * Dumb datum for passing around input information.
-   * @param endpoint endpoint being targeting
-   * @param body input body for non-GET calls
-   * @param queryParams query parameters in URL or in post body
-   * @param httpMethod http method being used (GET, POST, etc.)
-   * @param action action associated with this endpoint
-   * @param contentType accepted content-types
-   */
+    * Dumb datum for passing around input information.
+    *
+    * @param endpoint    endpoint being targeting
+    * @param body        input body for non-GET calls
+    * @param queryParams query parameters in URL or in post body
+    * @param httpMethod  http method being used (GET, POST, etc.)
+    * @param action      action associated with this endpoint
+    * @param contentType accepted content-types
+    */
   protected case class Input(endpoint: String,
                              body: IndexedSeq[Byte],
                              queryParams: String,
                              cookie: Option[String],
                              httpMethod: HttpMethod,
                              action: Action,
-                             contentType: ContentType)
+                             contentType: ContentType) {
+    // call the handler on the registered action to parse the input
+    // and fetch the output (response)
+    lazy val message = action.handler(
+      Request(
+        queryParams = queryParams,
+        httpMethod = httpMethod,
+        entity = body,
+        extractedParams = action.actionContext.map(endpoint),
+        contentType = contentType,
+        cookie = cookie
+      )
+    )
+  }
 
   /**
-   * Handle the input and write to the output stream,
-   * returning data to the client.
-   * @param input [[Input]] model that we've read from previous method
-   * @param out output stream we are writing to
-   */
-  @inline private def writeOutput(input: Input, out: DataOutputStream) = {
-    // check if the http method is registered for this endpoint
-    if (input.action.methods.contains(input.httpMethod)) {
-
-      // call the handler on the registered action to parse the input
-      // and fetch the output (response)
-      val message = input.action.handler(
-        Request(
-          queryParams = input.queryParams,
-          httpMethod = input.httpMethod,
-          entity = input.body,
-          extractedParams = input.action.actionContext.map(input.endpoint),
-          contentType = input.contentType,
-          cookie = input.cookie
-        )
-      )
-
-      // if successful, write the output following http 1.1 specs
-      if (message.response.isDefined) {
-        if (message.redirect.isDefined) {
-          out.writeBytes("HTTP/1.1 302 Found\r\n")
-          out.writeBytes(s"Location: ${message.redirect.get}\r\n")
-        } else {
-          out.writeBytes("HTTP/1.1 200 OK\r\n")
-        }
-        if (message.cookie.isDefined) {
-          out.writeBytes(s"Set-Cookie: ${message.cookie.get}\r\n")
-        }
-        out.writeBytes("Server: WebServer\r\n")
-        out.writeBytes(s"Content-Type: ${input.action.contentType}\r\n")
-        out.writeBytes(s"Content-Length: ${message.response.get.length}\r\n")
-        out.writeBytes("Connection: close\r\n")
-        out.writeBytes("\r\n")
-        out.write(message.response.get)
+    * Handle the input and write to the output stream,
+    * returning data to the client.
+    *
+    * @param out output stream we are writing to
+    */
+  @inline protected def writeOutput(message: Message,
+                                    contentType: ContentType,
+                                    out: DataOutputStream,
+                                    closed: Boolean = true) = {
+    // if successful, write the output following http 1.1 specs
+    if (message.response.isDefined) {
+      if (message.redirect.isDefined) {
+        out.writeBytes("HTTP/1.1 302 Found\r\n")
+        out.writeBytes(s"Location: ${message.redirect.get}\r\n")
       } else {
-        out.writeBytes("HTTP/1.1 400 Bad request\r\n")
-        out.writeBytes("Server: WebServer\r\n")
-        out.writeBytes("Connection: close\r\n")
-        out.writeBytes("\r\n")
+        out.writeBytes("HTTP/1.1 200 OK\r\n")
       }
+      if (message.cookie.isDefined) {
+        out.writeBytes(s"Set-Cookie: ${message.cookie.get}\r\n")
+      }
+      out.writeBytes("Server: WebServer\r\n")
+      out.writeBytes(s"Content-Type: $contentType\r\n")
+      out.writeBytes(s"Content-Length: ${message.response.get.length}\r\n")
+
+      if (closed) {
+        out.writeBytes("Connection: close\r\n")
+      } else {
+        out.writeBytes("Connection: Keep-Alive\r\n")
+      }
+
+      out.writeBytes("\r\n")
+      out.write(message.response.get)
     } else {
-      log error
-        s"${input.httpMethod} is not a valid Http method for ${input.endpoint}"
+      out.writeBytes("HTTP/1.1 400 Bad request\r\n")
+      out.writeBytes("Server: WebServer\r\n")
+      out.writeBytes("Connection: close\r\n")
+      out.writeBytes("\r\n")
     }
   }
 
   /**
-   * Read the input from the input stream.
-   * @param bufferedReader input stream
-   * @return [[Input]] model (endpoint, body, http method)
-   */
-  @inline private def readInput(bufferedReader: BufferedReader): Option[Input] = {
+    * Read the input from the input stream.
+    *
+    * @param bufferedReader input stream
+    * @return [[Input]] model (endpoint, body, http method)
+    */
+  @inline protected def readInput(bufferedReader: BufferedReader): Option[Input] = {
     var line: String = null
 
     // read top line of input
@@ -152,9 +168,6 @@ protected class IOManager(port: Int) {
     }
 
     log.v(endpoint)
-    log.v(Controller.actionRegistrants.map { act =>
-        act.actionContext.coercedEndpoint.r.toString()
-    }.mkString(" /// "))
 
     // get and check that this endpoint is in our registered
     // in one of our controllers
@@ -175,7 +188,8 @@ protected class IOManager(port: Int) {
           body = bodyStream
         }
       }
-      Option(Input(
+
+      val input = Option(Input(
         endpoint,
         body,
         queryParameters,
@@ -184,61 +198,61 @@ protected class IOManager(port: Int) {
         action.get,
         contentType
       ))
+
+      if (input.isDefined) {
+        if (input.get.action.methods.contains(input.get.httpMethod)) {
+          input
+        } else {
+          None
+        }
+      } else {
+        None
+      }
     } else {
       log e s"invalid endpoint: $endpoint"
       None
     }
   }
 
-  @inline private def ioLoop(implicit socket: Socket) = {
-    // retrieve input stream from socket
-    val inputStream = new BufferedReader(
-      new InputStreamReader(socket.getInputStream)
-    )
+  protected def ioLoop(socket: Socket)
 
-    // read data from the input stream
-    val input = readInput(inputStream)
+  @inline private def socketLoop(server: ServerSocket) = {
+    var socket: Socket = null
 
-    // if there were no errors reading the data, write output
-    if (input.isDefined) {
-      writeOutput(input.get, new DataOutputStream(socket.getOutputStream))
-    }
-
-    // close the socket
-    socket.close()
-  }
-
-  @inline private def socketLoop(implicit server: ServerSocket) = {
     try {
+      log trace "Awaiting request"
       // system-level wait while we literally wait on a request
-      implicit val socket = server.accept()
+      socket = server.accept()
 
+      log trace "Socket accepted"
       // spawn off a new Future once a request has been accepted
       Future {
-        ioLoop
+        ioLoop(socket)
       }
     } catch {
-      case e: Exception => log error e.getMessage
+      case e: Exception => log error e.getMessage; socket.close()
     }
   }
 
-  def singleTestLoop() = {
-    // open new server socket on selected port
-    implicit val server = new ServerSocket(port)
-    socketLoop
-    server.close()
+  def shutdown() = {
+    isRunning = false
+    try {
+      server.close()
+    } catch {
+      case e: IOException => e.printStackTrace()
+    }
   }
 
   /**
-   * Main IO loop.
-   */
+    * Main IO loop.
+    */
   def loop() = {
-    // open new server socket on selected port
-    implicit val server = new ServerSocket(port)
-
-    // begin main loop
-    while (true) {
-      socketLoop
+    isRunning = true
+    Future {
+      // begin main loop
+      while (isRunning) {
+        socketLoop(server)
+      }
     }
   }
 }

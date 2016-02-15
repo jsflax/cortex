@@ -4,8 +4,11 @@ package cortex.model
  */
 case class ActionContext(endpoint: String)(implicit symbols: Seq[Symbol]) {
   val coercedEndpoint =
-    if (endpoint.startsWith("/")) endpoint
-    else s"/$endpoint"
+    if (endpoint.startsWith("/")) {
+      endpoint
+    } else {
+      s"/$endpoint"
+    }
 
   val regex = s"$coercedEndpoint".r
 
