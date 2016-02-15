@@ -11,7 +11,7 @@ import scalaj.http.Http
 class ControllerSpec extends BaseSpec {
   override def controllers = Seq(
     new Controller {
-      register("/hello", { resp =>
+      register("/hello", { req =>
         Option("Hello world")
       }, TextHtml, GET)
 
@@ -58,7 +58,7 @@ class ControllerSpec extends BaseSpec {
     }
   )
 
-  "An endpoint" should "respond to a GET with 'Hello world'" in {
+  "An endpoint /hello" should "respond to a GET with 'Hello world'" in {
     async {
       Http(
         s"http://$localhost:$port/hello"
