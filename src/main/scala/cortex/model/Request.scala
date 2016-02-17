@@ -3,7 +3,6 @@ package cortex.model
 import java.net.URLDecoder
 import cortex.controller.ContentType
 import cortex.controller.HttpMethod._
-import spray.json._
 import scala.language.implicitConversions
 
 /**
@@ -54,17 +53,6 @@ final case class Request(queryParams: String,
                          contentType: ContentType.Value,
                          extractedParams: Map[String, String] = Map.empty,
                          cookie: Option[String] = None) {
-  private lazy val scope: Scope = {
-    if (params.contains("scope")) {
-      Scope(
-        params("scope").split(","):_*
-      )
-    } else {
-      Scope()
-    }
-  }
-
-  def scope[A: JsonFormat](a: A): Scope = scope.scope(a)
 
   /** coerced query parameters if applicable */
   lazy val params: Map[String, String] = {
@@ -77,12 +65,4 @@ final case class Request(queryParams: String,
       else Map.empty[String, String]
       )
   }
-
-  /** posted json parameters if applicable */
-  lazy val json =
-    if (contentType == ContentType.ApplicationJson) {
-      JsonParser(new String(entity.toArray))
-    } else {
-      null
-    }
 }

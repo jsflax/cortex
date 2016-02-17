@@ -33,34 +33,11 @@ trait Controller {
 
   import cortex.controller.Controller.Message
 
-
-  implicit val strFormat: JsonFormat[String] =
-    new JsonFormat[String] {
-      override def read(value: JsValue) = value.asInstanceOf[JsString].value
-
-      override def write(str: String) = JsString(str)
+  implicit class WildcardContext(sc: StringContext) {
+    def w(implicit args: Symbol*): ActionContext = {
+      ActionContext(sc.s(args.map(_ => "(.+)"):_*))(args)
     }
-
-  implicit val intFormat: JsonFormat[Int] =
-    new JsonFormat[Int] {
-      override def read(value: JsValue) = value.asInstanceOf[JsNumber].value.toInt
-
-      override def write(str: Int) = JsNumber(str)
-    }
-
-  implicit val longFormat: JsonFormat[Long] =
-    new JsonFormat[Long] {
-      override def read(value: JsValue) = value.asInstanceOf[JsNumber].value.toLong
-
-      override def write(str: Long) = JsNumber(str)
-    }
-
-  implicit val boolFormat: JsonFormat[Boolean] =
-    new JsonFormat[Boolean] {
-      override def read(value: JsValue) = value.asInstanceOf[JsBoolean].value
-
-      override def write(str: Boolean) = JsBoolean(str)
-    }
+  }
 
   /**
     * Implicit conversion from string to byte array. This
@@ -78,17 +55,6 @@ trait Controller {
       case None => Option.empty[Array[Byte]]
     }
 
-  implicit def strTupToJs(strTup: (String, String)): (String, JsValue) =
-    strTup._1 -> JsString(strTup._2)
-
-  implicit def jsToMessage(jsValue: JsValue): Message =
-    optJsToMessage(Option(jsValue))
-
-  implicit def optJsToMessage(opt: Option[JsValue]): Message = opt match {
-    case Some(o) => Message(Option(o.toString().getBytes))
-    case None => Message(None)
-  }
-
   implicit def optStrToMessage(opt: Option[String]): Message =
     Message(opt)
 
@@ -96,6 +62,9 @@ trait Controller {
     Message(opt)
 
   implicit def noneToMessage(opt: Option[Nothing]): Message = Message(None)
+
+  implicit def strToMessage(str: String): Message =
+    Message(Option(str))
 
   implicit def stringToActionContext(string: String): ActionContext =
     ActionContext(string)(Seq())

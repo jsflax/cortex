@@ -13,7 +13,7 @@ class AppSpec extends BaseSpec {
   override def controllers = Seq(
     new Controller {
       register("helloJson", req => {
-        JsObject("message" -> "hello")
+        JsObject("message" -> JsString("hello")).toString()
       }, ContentType.ApplicationJson, HttpMethod.GET)
     }
   )

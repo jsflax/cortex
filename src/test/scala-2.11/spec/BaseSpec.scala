@@ -5,7 +5,7 @@ import java.util.concurrent.Executors
 
 import cortex.app.Cortex
 import cortex.controller.Controller
-import cortex.io.{IOManager, ClosedIOManager}
+import cortex.io.{IOManager, HttpProtocolManager}
 import cortex.util.log
 import cortex.view.View
 import org.scalatest._
@@ -36,7 +36,7 @@ trait BaseSpec
     with BeforeAndAfterAll
     with Cortex {
 
-  log.setLogLevels(log.Trace, log.Error)
+  log.setLogLevels(log.Error)
 
   val localhost = InetAddress.getLocalHost.getHostAddress
 
@@ -49,7 +49,7 @@ trait BaseSpec
   def port = _port
 
   override def ioManagers: Seq[_ <: IOManager] = Seq(
-    new ClosedIOManager(
+    new HttpProtocolManager(
       port,
       executionContext = new ExecutionContext {
         val threadPool = Executors.newFixedThreadPool(1000)

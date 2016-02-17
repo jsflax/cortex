@@ -4,7 +4,7 @@ import java.io.File
 
 import cortex.controller.Controller
 import cortex.db.SqlDB
-import cortex.io.{ClosedIOManager, IOManager}
+import cortex.io.{HttpProtocolManager, IOManager}
 import cortex.util.log
 import cortex.view.View
 
@@ -38,7 +38,7 @@ trait Cortex {
     */
   def views: Seq[_ <: View]
 
-  def ioManagers: Seq[_ <: IOManager] = Seq(new ClosedIOManager(port))
+  def ioManagers: Seq[_ <: IOManager] = Seq(new HttpProtocolManager(port))
 
   /**
     * Config file containing sensitive values and general configuration
