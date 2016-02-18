@@ -49,6 +49,7 @@ import Request._
   */
 final case class Request(queryParams: String,
                          httpMethod: HttpMethod,
+                         headers: Map[String, String],
                          entity: Seq[Byte],
                          contentType: ContentType.Value,
                          extractedParams: Map[String, String] = Map.empty,

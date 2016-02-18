@@ -36,7 +36,7 @@ trait BaseSpec
     with BeforeAndAfterAll
     with Cortex {
 
-  log.setLogLevels(log.Error)
+  log.setLogLevels(log.Error, log.Verbose)
 
   val localhost = InetAddress.getLocalHost.getHostAddress
 

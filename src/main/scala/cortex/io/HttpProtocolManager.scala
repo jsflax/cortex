@@ -8,6 +8,7 @@ import cortex.controller.Controller.Message
 import cortex.controller.{Controller, ContentType, HttpMethod}
 import cortex.util.log
 
+import scala.collection.mutable
 import scala.concurrent.ExecutionContext
 
 /**
@@ -92,6 +93,8 @@ class HttpProtocolManager(port: Int,
     var contentType = ContentType.NoneType
     var cookie = Option.empty[String]
 
+    var headers = mutable.Map[String, String]()
+
     do {
       line = bufferedReader.readLine()
       log verbose line
@@ -107,9 +110,16 @@ class HttpProtocolManager(port: Int,
             ContentType.valueMap.filterKeys(types.contains(_)).values.head
         } else if (line.toLowerCase.startsWith(cookieHeader)) {
           cookie = Option(line.substring(cookieHeader.length()))
+        } else {
+          val header = line.split(":")
+          if (header.forall(_.nonEmpty)) {
+            headers += header(0) -> header.slice(1, header.length).mkString
+          }
         }
       }
     } while (!line.equals(""))
+
+    log.v(s"headers: $headers")
 
     var queryParameters: String = null
     var body: IndexedSeq[Byte] = null
@@ -150,6 +160,7 @@ class HttpProtocolManager(port: Int,
         queryParameters,
         cookie,
         httpMethod.get,
+        headers.toMap,
         action.get,
         contentType
       ))

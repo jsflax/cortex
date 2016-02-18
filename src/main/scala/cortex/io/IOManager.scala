@@ -47,6 +47,7 @@ abstract class IOManager(port: Int,
                              queryParams: String,
                              cookie: Option[String],
                              httpMethod: HttpMethod,
+                             headers: Map[String, String],
                              action: Action,
                              contentType: ContentType) {
     // call the handler on the registered action to parse the input
@@ -55,6 +56,7 @@ abstract class IOManager(port: Int,
       Request(
         queryParams = queryParams,
         httpMethod = httpMethod,
+        headers = headers,
         entity = body,
         extractedParams = action.actionContext.map(endpoint),
         contentType = contentType,

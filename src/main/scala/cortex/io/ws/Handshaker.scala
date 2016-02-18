@@ -67,7 +67,7 @@ private[ws] class Handshaker(socket: Socket) {
     }
 
     // if it is not a valid http method, short circuit
-    if (httpMethod.isEmpty || httpMethod.get != HttpMethod.GET) {
+    if (httpMethod.isEmpty) {
       throw new UndefinedHttpMethod(
         s"${line.split(" ")(0)} is not a valid Http method"
       )

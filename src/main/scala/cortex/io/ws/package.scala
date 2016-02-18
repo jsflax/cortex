@@ -1,5 +1,7 @@
 package cortex.io
 
+import java.net.Socket
+
 import scala.language.implicitConversions
 
 /**
@@ -7,4 +9,6 @@ import scala.language.implicitConversions
   */
 package object ws {
   implicit private [ws] def intToByte(int: Int): Byte = int.toByte
+  implicit def webSocketToSocket(webSocket: WebSocket): Socket =
+    webSocket.socket
 }

@@ -1,8 +1,7 @@
 package spec
 
-import java.io.ByteArrayInputStream
 
-import cortex.io.ws.{WsReader, WsWriter}
+import cortex.io.ws.WsHandler
 
 /**
   * Created by jasonflax on 2/13/16.
@@ -53,7 +52,9 @@ class WsReadWriteSpec extends BaseSpec {
     """.stripMargin
 
   s"A message: $coffeeOnTheRocks" should "be encoded and then decoded" in {
-    val bytes = WsWriter.write(coffeeOnTheRocks.getBytes)
+    val handler = new WsHandler(null)(null)
+
+    val bytes = handler.write(coffeeOnTheRocks.getBytes)
 
     val mask = Seq[Byte](8, 16, 24, 32)
 
@@ -62,9 +63,9 @@ class WsReadWriteSpec extends BaseSpec {
     ).map(_.toByte)
 
     new String(
-      WsReader.read(
+      handler.read(
         (bytes.slice(0, 2) ++ mask ++ masked).toStream
-      )
+      ).message.get
     ) should equal(coffeeOnTheRocks)
   }
 }
