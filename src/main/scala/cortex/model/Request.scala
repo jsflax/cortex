@@ -1,8 +1,8 @@
 package cortex.model
 
 import java.net.URLDecoder
-import cortex.controller.ContentType
-import cortex.controller.HttpMethod._
+import cortex.controller._
+import cortex.util.{log, DynamicMap}
 import scala.language.implicitConversions
 
 /**
@@ -42,22 +42,25 @@ import Request._
   * Datum for response information.
   *
   * @param queryParams     string form query params that will be coerced to a map
-  * @param httpMethod      http method being called
+  * @param verb            http method being called
   * @param entity          request body if applicable
   * @param contentType     requested content type
   * @param extractedParams params extracted from wildcard url
   */
 final case class Request(queryParams: String,
-                         httpMethod: HttpMethod,
+                         verb: HttpVerb[_ <: Primitive[_]],
                          headers: Map[String, String],
                          entity: Seq[Byte],
                          contentType: ContentType.Value,
                          extractedParams: Map[String, String] = Map.empty,
-                         cookie: Option[String] = None) {
+                         cookie: Option[String]) {
+
+  var missingParams: Seq[String] = Seq()
+  var failed = false
 
   /** coerced query parameters if applicable */
-  lazy val params: Map[String, String] = {
-    extractedParams ++ (
+  lazy val params: DynamicMap = {
+    val params = extractedParams ++ (
       if (queryParams != null) parseQueryString(queryParams)
       else Map.empty[String, String]
       ) ++ (
@@ -65,5 +68,35 @@ final case class Request(queryParams: String,
         parseQueryString(new String(entity.toArray))
       else Map.empty[String, String]
       )
+
+    if (verb.params.nonEmpty) {
+
+      if (params.keys.forall(verb.params.keySet.contains)) {
+
+        val coercedMap = params.map {
+          case (key: String, value: String) =>
+            val prim: Primitive[_] = verb.params(key)
+
+            val coerced = prim.coerce(value)
+
+            if (coerced.isFailure) {
+              failed = true
+              key -> null
+            } else {
+              key -> coerced.get
+            }
+        }
+
+        new DynamicMap(
+          coercedMap
+        )
+      } else {
+        failed = true
+        missingParams = verb.params.keySet.diff(params.keySet).toSeq
+        new DynamicMap(params)
+      }
+    } else {
+      new DynamicMap(params)
+    }
   }
 }

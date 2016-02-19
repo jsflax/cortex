@@ -2,7 +2,7 @@ package spec
 
 import java.io.File
 
-import cortex.controller.{ContentType, Controller, HttpMethod}
+import cortex.controller.{HttpVerb, ContentType, Controller}
 import cortex.view.View
 
 import scala.io.Source
@@ -22,7 +22,7 @@ class ViewSpec extends BaseSpec {
     new Controller {
       register("/", { resp =>
         Option(views.head.dashboard())
-      }, ContentType.TextHtml, HttpMethod.GET)
+      }, ContentType.TextHtml, HttpVerb.GET)
     }
   )
 

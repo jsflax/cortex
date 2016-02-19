@@ -59,11 +59,13 @@ trait Cortex {
   /**
     * Convenience class to pass around database information.
     *
-    * @param address  address of db
+    * @param host  address of host
+    * @param db db name
     * @param user     user name
     * @param password password
     */
-  protected case class DBConnection(address: String,
+  protected case class DBConnection(host: String,
+                                    db: String,
                                     user: String,
                                     password: String)
 

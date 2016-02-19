@@ -5,7 +5,7 @@ import java.net.Socket
 
 import cortex.controller.ContentType._
 import cortex.controller.Controller.Message
-import cortex.controller.{Controller, ContentType, HttpMethod}
+import cortex.controller.{HttpVerb, Controller, ContentType}
 import cortex.util.log
 
 import scala.collection.mutable
@@ -77,12 +77,13 @@ class HttpProtocolManager(port: Int,
 
     // this line also starts with the http method
     // check our HttpMethods enum for a valid httpMethod
-    val httpMethod = HttpMethod.values.collectFirst {
+    val httpMethod = HttpVerb.values.collectFirst {
       case method if line startsWith method.toString => method
     }
 
     // if it is not a valid http method, short circuit
     if (httpMethod.isEmpty) {
+      log v s"${line.split(" ")(0)} is not a valid Http method"
       throw new UndefinedHttpMethod(
         s"${line.split(" ")(0)} is not a valid Http method"
       )
@@ -98,7 +99,7 @@ class HttpProtocolManager(port: Int,
     do {
       line = bufferedReader.readLine()
       log verbose line
-      if (httpMethod.get != HttpMethod.GET) {
+      if (httpMethod.get != HttpVerb.GET) {
         val contentHeader = "content-length: "
         val contentTypeHeader = "content-type: "
         val cookieHeader = "cookie: "
@@ -143,9 +144,9 @@ class HttpProtocolManager(port: Int,
     // if it is defined, read the body and return in the input
     // else, return None, as we aren't going to handle this further
     if (action.isDefined) {
-      log d action.get.actionContext.endpoint
+      log v action.get.actionContext.endpoint
 
-      if (httpMethod.get != HttpMethod.GET) {
+      if (httpMethod.get != HttpVerb.GET) {
         val bodyStream: IndexedSeq[Byte] =
           for (i <- 0 until contentLength)
             yield bufferedReader.read().asInstanceOf[Byte]
@@ -154,25 +155,21 @@ class HttpProtocolManager(port: Int,
         }
       }
 
-      val input = Option(Input(
-        endpoint,
-        body,
-        queryParameters,
-        cookie,
-        httpMethod.get,
-        headers.toMap,
-        action.get,
-        contentType
-      ))
-
-      if (input.isDefined) {
-        if (input.get.action.methods.contains(input.get.httpMethod)) {
-          input
-        } else {
-          None
-        }
-      } else {
-        None
+      action.get.methods.find(httpMethod.get.equals) match {
+        case Some(verb) =>
+          Option(
+            Input(
+              endpoint,
+              body,
+              queryParameters,
+              cookie,
+              verb,
+              headers.toMap,
+              action.get,
+              contentType
+            )
+          )
+        case None => None
       }
     } else {
       log e s"invalid endpoint: $endpoint"

@@ -1,6 +1,6 @@
 package spec
 
-import cortex.controller.{HttpMethod, ContentType, Controller}
+import cortex.controller.{HttpVerb, ContentType, Controller}
 import spray.json.{JsString, JsObject}
 
 import scalaj.http.Http
@@ -14,7 +14,7 @@ class AppSpec extends BaseSpec {
     new Controller {
       register("helloJson", req => {
         JsObject("message" -> JsString("hello")).toString()
-      }, ContentType.ApplicationJson, HttpMethod.GET)
+      }, ContentType.ApplicationJson, HttpVerb.GET)
     }
   )
 

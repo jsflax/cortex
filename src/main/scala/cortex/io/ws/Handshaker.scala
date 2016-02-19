@@ -3,7 +3,7 @@ package cortex.io.ws
 import java.io.{InputStreamReader, DataOutputStream, BufferedReader}
 import java.net.Socket
 
-import cortex.controller.{Controller, HttpMethod}
+import cortex.controller.{Controller, HttpVerb}
 import cortex.io.UndefinedHttpMethod
 import cortex.util.log
 
@@ -62,7 +62,7 @@ private[ws] class Handshaker(socket: Socket) {
 
     // this line also starts with the http method
     // check our HttpMethods enum for a valid httpMethod
-    val httpMethod = HttpMethod.values.collectFirst {
+    val httpMethod = HttpVerb.values.collectFirst {
       case method if line startsWith method.toString => method
     }
 

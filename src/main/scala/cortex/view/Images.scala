@@ -1,7 +1,6 @@
 package cortex.view
 
-import cortex.controller.Controller
-import cortex.controller.{HttpMethod, ContentType}
+import cortex.controller.{HttpVerb, Controller, ContentType}
 
 import scala.io.BufferedSource
 
@@ -16,7 +15,7 @@ trait Images extends View with Controller {
     val favOpt = Option(favicon.map(_.toByte).toArray)
     favicon.close()
     favOpt
-  }, ContentType.ImagePng, HttpMethod.GET)
+  }, ContentType.ImagePng, HttpVerb.GET)
 
   for ((fileName, extAndGenFunc) <- fields) {
     register(s"/images/$fileName${extAndGenFunc._1}", { resp =>
@@ -25,6 +24,6 @@ trait Images extends View with Controller {
       case ".png" => ContentType.ImagePng
       case ".webp" => ContentType.ImageWebp
       case _ => ContentType.ImagePng
-    }, HttpMethod.GET)
+    }, HttpVerb.GET)
   }
 }

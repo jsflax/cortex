@@ -25,12 +25,4 @@ class WsProtocolSpec extends BaseSpec {
       register("connect", req => { None }, ContentType.AllType)
     }
   )
-
-  "" should "" in {
-    start()
-
-    synchronized {
-      wait()
-    }
-  }
 }

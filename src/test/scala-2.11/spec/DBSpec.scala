@@ -34,7 +34,8 @@ class DBSpec extends BaseSpec {
   override def configFile = Option(new File("src/test/config.txt"))
 
   override def dbConnection = DBConnection(
-    "localhost:3306/conf",
+    "localhost:3306",
+    "conf",
     config.user,
     config.pass
   )

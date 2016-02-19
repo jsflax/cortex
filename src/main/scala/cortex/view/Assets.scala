@@ -1,7 +1,6 @@
 package cortex.view
 
-import cortex.controller.Controller
-import cortex.controller.{ContentType, HttpMethod}
+import cortex.controller.{HttpVerb, Controller, ContentType}
 
 /**
  */
@@ -16,6 +15,6 @@ trait Assets extends View with Controller {
       case ".ttf" => ContentType.FontTrueType
       case ".otf" => ContentType.FontOpenType
       case _ => ContentType.TextHtml
-    }, HttpMethod.GET)
+    }, HttpVerb.GET)
   }
 }
