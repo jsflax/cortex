@@ -1,20 +1,18 @@
 package cortex.view
 
-import cortex.controller.{HttpVerb, Controller, ContentType}
+import cortex.controller.{HttpController, HttpVerb, Controller, ContentType}
 
 import scala.io.BufferedSource
 
 /**
  */
-trait Images extends View with Controller {
-  def favicon: BufferedSource
+trait Images extends View with HttpController {
+  def favicon: Option[Array[Byte]]
 
   override protected[view] def encoding = scala.io.Codec.ISO8859
 
   register("favicon.ico", { resp =>
-    val favOpt = Option(favicon.map(_.toByte).toArray)
-    favicon.close()
-    favOpt
+    favicon
   }, ContentType.ImagePng, HttpVerb.GET)
 
   for ((fileName, extAndGenFunc) <- fields) {

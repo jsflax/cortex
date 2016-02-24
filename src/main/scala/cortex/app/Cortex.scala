@@ -8,6 +8,8 @@ import cortex.io.{HttpProtocolManager, IOManager}
 import cortex.util.log
 import cortex.view.View
 
+import scala.collection.mutable.ListBuffer
+
 /**
   * Main application trait. Should be extending by an object.
   * This is the applications equivalent of void main(string: Args[])
@@ -28,7 +30,7 @@ trait Cortex {
     *
     * @return seq of controllers
     */
-  def controllers: Seq[_ <: Controller]
+  lazy val controllers: ListBuffer[Controller[_]] = new ListBuffer()
 
   /**
     * Abstract method so that inheritor must
@@ -36,7 +38,8 @@ trait Cortex {
     *
     * @return seq of views
     */
-  def views: Seq[_ <: View]
+  lazy val views: ListBuffer[View] = new ListBuffer()
+
 
   def ioManagers: Seq[_ <: IOManager] = Seq(new HttpProtocolManager(port))
 

@@ -2,7 +2,8 @@ package cortex.model
 
 import java.net.URLDecoder
 import cortex.controller._
-import cortex.util.{log, DynamicMap}
+import cortex.util.DynamicMap
+import spray.json._
 import scala.language.implicitConversions
 
 /**
@@ -60,19 +61,40 @@ final case class Request(queryParams: String,
 
   /** coerced query parameters if applicable */
   lazy val params: DynamicMap = {
-    val params = extractedParams ++ (
-      if (queryParams != null) parseQueryString(queryParams)
-      else Map.empty[String, String]
-      ) ++ (
-      if (contentType == ContentType.ApplicationFormUrlEncoded)
-        parseQueryString(new String(entity.toArray))
-      else Map.empty[String, String]
-      )
+
+    val params =
+      extractedParams ++ (
+        if (queryParams != null) {
+          parseQueryString(queryParams)
+        } else {
+          Map.empty[String, String]
+        }) ++ (
+        contentType match {
+          case ContentType.ApplicationFormUrlEncoded =>
+            parseQueryString(new String(entity.toArray))
+          case ContentType.ApplicationJson =>
+            def mapJson: JsValue => Any = {
+              case JsString(s) => s
+              case JsNumber(n) => n match {
+                case int if n.isValidInt => int.intValue()
+                case double if n.isDecimalDouble => double.doubleValue()
+                case float if n.isDecimalFloat => float.floatValue()
+                case long if n.isValidLong => long.longValue()
+                case short if n.isValidShort => short.shortValue()
+              }
+              case JsBoolean(b) => b
+              case JsObject(o) => o.mapValues(mapJson)
+              case JsArray(a) => a.map(mapJson)
+            }
+
+            JsonParser.apply(
+              new String(entity.toArray)
+            ).asJsObject.fields.mapValues(mapJson)
+          case _ => Map.empty[String, String]
+        })
 
     if (verb.params.nonEmpty) {
-
       if (params.keys.forall(verb.params.keySet.contains)) {
-
         val coercedMap = params.map {
           case (key: String, value: String) =>
             val prim: Primitive[_] = verb.params(key)

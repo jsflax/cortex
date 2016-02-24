@@ -1,6 +1,6 @@
 package spec
 
-import cortex.controller.{HttpVerb, ContentType, Controller}
+import cortex.controller.{HttpController, HttpVerb, ContentType, Controller}
 import spray.json.{JsString, JsObject}
 
 import scalaj.http.Http
@@ -10,13 +10,12 @@ import scalaj.http.Http
   */
 class AppSpec extends BaseSpec {
 
-  override def controllers = Seq(
-    new Controller {
+  controllers +=
+    new HttpController {
       register("helloJson", req => {
         JsObject("message" -> JsString("hello")).toString()
       }, ContentType.ApplicationJson, HttpVerb.GET)
     }
-  )
 
   "An endpoint /helloJson" should "respond with {\"message\": \"hello\"}" in {
     async {

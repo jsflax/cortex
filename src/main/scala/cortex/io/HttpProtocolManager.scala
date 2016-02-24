@@ -3,9 +3,9 @@ package cortex.io
 import java.io.{DataOutputStream, InputStreamReader, BufferedReader}
 import java.net.Socket
 
+import cortex.controller.ContentType
 import cortex.controller.ContentType._
-import cortex.controller.Controller.Message
-import cortex.controller.{HttpVerb, Controller, ContentType}
+import cortex.controller._
 import cortex.util.log
 
 import scala.collection.mutable
@@ -24,7 +24,7 @@ class HttpProtocolManager(port: Int,
     *
     * @param out output stream we are writing to
     */
-  @inline protected def writeOutput(message: Message,
+  @inline protected def writeOutput(message: HttpMessage,
                                     contentType: ContentType,
                                     out: DataOutputStream,
                                     closed: Boolean = true) = {
@@ -192,7 +192,7 @@ class HttpProtocolManager(port: Int,
     // if there were no errors reading the data, write output
     if (input.isDefined) {
       writeOutput(
-        input.get.message,
+        input.get.message.asInstanceOf[HttpMessage],
         input.get.contentType,
         new DataOutputStream(socket.getOutputStream))
     }

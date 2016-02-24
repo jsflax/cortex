@@ -10,10 +10,17 @@ import scala.io.{BufferedSource, Source}
 class ImagesSpec extends BaseSpec {
 
    object images extends Images {
-     override def favicon = new BufferedSource(
-       new FileInputStream("src/test/images/conf_room.png"),
-       1024
-     )
+     lazy val fav = {
+       val source = scala.io.Source.fromFile(
+         "src/test/images/conf_room.png"
+       )(encoding)
+       val byteArray = source.map(_.toByte).toArray
+       source.close()
+       byteArray
+     }
+
+     override def favicon = Option(fav)
+
      override def viewDir = new File(
        "src/test/images/"
      )

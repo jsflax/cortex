@@ -3,9 +3,11 @@ package cortex.io.ws
 import java.io.{InputStreamReader, DataOutputStream, BufferedReader}
 import java.net.Socket
 
-import cortex.controller.{Controller, HttpVerb}
-import cortex.io.UndefinedHttpMethod
+import cortex.controller.{WsMessage, Controller, HttpVerb}
+import cortex.io.{Input, UndefinedHttpMethod}
 import cortex.util.log
+
+import scala.collection.mutable
 
 /**
   * Created by jasonflax on 2/16/16.
@@ -49,8 +51,8 @@ private[ws] class Handshaker(socket: Socket) {
     * @return hand-shook socket key
     */
   @inline
-  private def initiateHandshake(bufferedReader: BufferedReader):
-  Option[String] = {
+  private def initiateHandshake[A](bufferedReader: BufferedReader):
+  (Option[String], Option[WsMessage[A]]) = {
     var line: String = null
 
     // read top line of input
@@ -74,6 +76,7 @@ private[ws] class Handshaker(socket: Socket) {
     }
 
     var webSocketKey: String = null
+    var headers = mutable.Map[String, String]()
 
     do {
       line = bufferedReader.readLine()
@@ -81,6 +84,11 @@ private[ws] class Handshaker(socket: Socket) {
       val webSocketKeyKey = "sec-websocket-key: "
       if (line.toLowerCase.startsWith(webSocketKeyKey)) {
         webSocketKey = line.substring(webSocketKeyKey.length)
+      } else {
+        val header = line.split(":")
+        if (header.forall(_.nonEmpty)) {
+          headers += header(0) -> header.slice(1, header.length).mkString
+        }
       }
     } while (!line.equals(""))
 
@@ -114,26 +122,44 @@ private[ws] class Handshaker(socket: Socket) {
       ))
 
       if (socketKey.isDefined) {
-        socketKey
+        action.get.methods.find(httpMethod.get.equals) match {
+          case Some(verb) =>
+            socketKey -> Option(
+              Input(
+                endpoint,
+                body = IndexedSeq(),
+                queryParameters,
+                cookie = None,
+                verb,
+                headers.toMap,
+                action.get,
+                action.get.contentType
+              ).message.asInstanceOf[WsMessage[A]]
+            )
+          case None =>
+            socketKey -> None
+        }
       } else {
-        None
+        None -> None
       }
     } else {
       log e s"invalid endpoint: $endpoint"
-      None
+      None -> None
     }
   }
 
-  def shake(): Option[String] = {
-    val socketKeyOpt = initiateHandshake(new BufferedReader(
-      new InputStreamReader(socket.getInputStream)
-    ))
+  def shake[A](): (Option[String], Option[WsMessage[A]]) = {
+    val keyAndPayloadOpt:
+    (Option[String], Option[WsMessage[A]]) =
+      initiateHandshake[A](new BufferedReader(
+        new InputStreamReader(socket.getInputStream)
+      ))
 
     completeHandshake(
-      socketKeyOpt,
+      keyAndPayloadOpt._1,
       new DataOutputStream(socket.getOutputStream)
     )
 
-    socketKeyOpt
+    keyAndPayloadOpt
   }
 }

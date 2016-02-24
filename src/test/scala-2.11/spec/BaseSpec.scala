@@ -40,10 +40,6 @@ trait BaseSpec
 
   val localhost = InetAddress.getLocalHost.getHostAddress
 
-  def controllers: Seq[_ <: Controller] = Seq()
-
-  def views: Seq[_ <: View] = Seq()
-
   val _port = BaseSpec.nextPort
 
   def port = _port

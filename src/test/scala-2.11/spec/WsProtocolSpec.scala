@@ -1,6 +1,6 @@
 package spec
 
-import cortex.controller.{ContentType, Controller}
+import cortex.controller.{WsController, ContentType}
 import cortex.io.ws.{WebSocket, WsProtocolManager}
 
 /**
@@ -8,20 +8,20 @@ import cortex.io.ws.{WebSocket, WsProtocolManager}
   */
 class WsProtocolSpec extends BaseSpec {
   override def ioManagers = Seq(
-    new WsProtocolManager(8083) {
-      override def onSocketConnected(socket: WebSocket): Unit = {
+    new WsProtocolManager[Any](8083) {
+      override def onSocketConnected(socket: WebSocket[Any]): Unit = {
         println(socket.token)
       }
 
-      override def onMessageReceived(socket: WebSocket,
+      override def onMessageReceived(socket: WebSocket[Any],
                                      message: Array[Byte]): Unit = {
         println(new String(message))
       }
     }
   )
 
-  override def controllers = Seq(
-    new Controller {
+ controllers ++= Seq(
+    new WsController {
       register("connect", req => { None }, ContentType.AllType)
     }
   )

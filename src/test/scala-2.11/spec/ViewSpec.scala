@@ -2,7 +2,7 @@ package spec
 
 import java.io.File
 
-import cortex.controller.{HttpVerb, ContentType, Controller}
+import cortex.controller.{HttpController, HttpVerb, ContentType, Controller}
 import cortex.view.View
 
 import scala.io.Source
@@ -10,7 +10,7 @@ import scalaj.http.Http
 /**
  */
 class ViewSpec extends BaseSpec {
-  override def views = Seq(
+  views ++= Seq(
     new View {
       override def viewDir = new File(
         "src/test/resources/"
@@ -18,13 +18,11 @@ class ViewSpec extends BaseSpec {
     }
   )
 
-  override def controllers = Seq(
-    new Controller {
+  controllers += new HttpController {
       register("/", { resp =>
         Option(views.head.dashboard())
       }, ContentType.TextHtml, HttpVerb.GET)
     }
-  )
 
   "A dynamic view" should "equal the matching file" in {
     Source.fromFile(

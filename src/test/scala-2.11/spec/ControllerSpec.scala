@@ -1,33 +1,34 @@
 package spec
 
 import cortex.controller.ContentType._
-import cortex.controller.Controller
+import cortex.controller.HttpController
 import cortex.controller.HttpVerb._
 
 import cortex.model.Primitive._
 import cortex.util.log
-import scala.util.Try
 import scalaj.http.Http
 
 import cortex.util.util._
 
 import scala.language.implicitConversions
 
+import scala.language.postfixOps
+
 /**
   */
 class ControllerSpec extends BaseSpec {
 
-  override def controllers = Seq(
-    new Controller {
+  controllers ++= Seq(
+    new HttpController {
       register("/hello", { req =>
         Option("Hello world")
       }, TextHtml, GET)
 
       register("/sum", { resp =>
         println("pre one")
-        val one: String = resp.params.one
+        val one: String = ~resp.params.one
         println(one)
-        val two: String = resp.params.two
+        val two: String = ~resp.params.two
 
         assert(one forall Character.isDigit)
         assert(two forall Character.isDigit)
@@ -42,15 +43,8 @@ class ControllerSpec extends BaseSpec {
             log d resp.missingParams.mkString(", ")
           }
 
-          assert {
-            val ok = Try(resp.params.id)
-            if (ok.isFailure) {
-              println(ok.failed.get.getMessage)
-            }
-            ok.isFailure
-          }
           println("OK")
-          assert(isValidEmail(resp.params.email))
+          assert(isValidEmail(~resp.params.email))
 
           Option("success")
         },
@@ -64,16 +58,17 @@ class ControllerSpec extends BaseSpec {
       register(w"/user/${'id}/email", { resp =>
         resp.verb match {
           case GET =>
-            val id: String = resp.params.id
+            val id: String = ~resp.params.id
+
             assert(id forall Character.isDigit)
 
             Option("success")
           case PUT =>
-            val id: String = resp.params.id
+            val id: String = ~resp.params.id
 
             assert(id forall Character.isDigit)
             assert(isValidEmail(
-              resp.params.email
+              ~resp.params.email
             ))
             Option("success")
           case _ => None

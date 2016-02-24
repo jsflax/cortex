@@ -9,6 +9,6 @@ import scala.language.implicitConversions
   */
 package object ws {
   implicit private [ws] def intToByte(int: Int): Byte = int.toByte
-  implicit def webSocketToSocket(webSocket: WebSocket): Socket =
+  implicit def webSocketToSocket(webSocket: WebSocket[_]): Socket =
     webSocket.socket
 }

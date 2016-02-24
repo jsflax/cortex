@@ -56,8 +56,8 @@ case class Frame(isFinal: Boolean,
 import MessageType._
 import CloseCode._
 
-class WsHandler(socket: WebSocket)
-               (messageReceivedListener: (WebSocket, Array[Byte]) => Unit) {
+class WsHandler[A](socket: WebSocket[A])
+                  (messageReceivedListener: (WebSocket[A], Array[Byte]) => Unit) {
 
   def read(bytes: Stream[Byte]) = WsReader.readFrame(bytes)
 

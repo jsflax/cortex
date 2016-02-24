@@ -1,7 +1,7 @@
 package spec
 
 
-import cortex.io.ws.WsHandler
+import cortex.io.ws.{WebSocket, WsHandler}
 
 /**
   * Created by jasonflax on 2/13/16.

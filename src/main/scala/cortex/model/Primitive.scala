@@ -1,6 +1,5 @@
 package cortex.model
 
-import cortex.util.DynamicMap
 import spray.json._
 
 import scala.util.{Failure, Success, Try}
@@ -124,6 +123,7 @@ object Primitive {
   }
 
   case object string extends Primitive[String] {
-    def coerce(string: String) = Try(string)
+    def coerce(string: String) = Try(string.toString)
   }
+
 }
