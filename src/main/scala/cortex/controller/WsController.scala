@@ -7,5 +7,5 @@ import scala.language.implicitConversions
   */
 trait WsController extends Controller[WsMessage[_]] {
   implicit def anyToMessage(any: Any): WsMessage[_] =
-    WsMessage(Option(any))
+    WsMessage(any)
 }

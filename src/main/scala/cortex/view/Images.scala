@@ -16,7 +16,7 @@ trait Images extends View with HttpController {
   }, ContentType.ImagePng, HttpVerb.GET)
 
   for ((fileName, extAndGenFunc) <- fields) {
-    register(s"/images/$fileName${extAndGenFunc._1}", { resp =>
+    register(s"/img/$fileName${extAndGenFunc._1}", { resp =>
       Option(extAndGenFunc._2(null))
     }, extAndGenFunc._1 match {
       case ".png" => ContentType.ImagePng

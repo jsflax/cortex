@@ -55,10 +55,17 @@ object log {
 
   private def print(msg: String, color: String) = {
     if (on) {
-      val stackTrace = Thread.currentThread().getStackTrace
-      println(
-        s"$color[${stackTrace(4).getMethodName}] $msg$Clear"
-      )
+      try {
+        val stackTrace = Thread.currentThread().getStackTrace
+        println(
+          s"$color[${stackTrace(4).getMethodName}] $msg$Clear"
+        )
+      } catch {
+        case e: Exception =>
+          println(
+            s"$color[log] $msg$Clear"
+          )
+      }
     }
   }
 

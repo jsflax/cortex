@@ -36,7 +36,7 @@ trait BaseSpec
     with BeforeAndAfterAll
     with Cortex {
 
-  log.setLogLevels(log.Error, log.Debug)
+  //log.setLogLevels(log.Error, log.Debug)
 
   val localhost = InetAddress.getLocalHost.getHostAddress
 
@@ -70,7 +70,11 @@ trait BaseSpec
   }
 
   override def start() =
-    ioManagers.foreach(io => io.loop())
+    try {
+      ioManagers.foreach(io => io.loop())
+    } catch {
+      case e: Exception => e.printStackTrace()
+    }
 
   override def beforeAll = {
     log trace s"Starting $suiteName on port $port"

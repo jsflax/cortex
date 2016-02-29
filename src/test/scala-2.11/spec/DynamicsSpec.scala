@@ -3,7 +3,6 @@ package spec
 import cortex.controller.ContentType._
 import cortex.controller.HttpController
 import cortex.controller.HttpVerb.POST
-import cortex.util.DynamicValue
 import spray.json._
 
 import scalaj.http.Http

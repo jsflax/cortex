@@ -2,6 +2,7 @@ package spec
 
 
 import cortex.io.ws.{WebSocket, WsHandler}
+import cortex.util.log
 
 /**
   * Created by jasonflax on 2/13/16.
@@ -51,21 +52,42 @@ class WsReadWriteSpec extends BaseSpec {
       |filter barista, sit at robust french press white.
     """.stripMargin
 
-  s"A message: $coffeeOnTheRocks" should "be encoded and then decoded" in {
+//  s"A message: $coffeeOnTheRocks" should "be encoded and then decoded" in {
+//    val handler = new WsHandler(null)(null)
+//
+//    val bytes = handler.write(coffeeOnTheRocks.getBytes)
+//
+//    val mask = Seq[Byte](8, 16, 24, 32)
+//
+//    val masked: Array[Byte] = bytes.slice(2, bytes.length).zipWithIndex.map(
+//      bi => bi._1 ^ mask(bi._2 % 4)
+//    ).map(_.toByte)
+//
+//    new String(
+//      handler.read(
+//        (bytes.slice(0, 2) ++ mask ++ masked).toStream
+//      ).message.get
+//    ) should equal(coffeeOnTheRocks)
+//  }
+
+  s"A long message" should "be encoded and then decoded" in {
+
+    println(coffeeIpsum.getBytes.length)
+
     val handler = new WsHandler(null)(null)
 
-    val bytes = handler.write(coffeeOnTheRocks.getBytes)
+    val bytes = handler.write(coffeeIpsum.getBytes)
 
     val mask = Seq[Byte](8, 16, 24, 32)
 
-    val masked: Array[Byte] = bytes.slice(2, bytes.length).zipWithIndex.map(
+    val masked: Array[Byte] = bytes.slice(4, bytes.length).zipWithIndex.map(
       bi => bi._1 ^ mask(bi._2 % 4)
     ).map(_.toByte)
 
     new String(
       handler.read(
-        (bytes.slice(0, 2) ++ mask ++ masked).toStream
+        (bytes.slice(0, 4) ++ mask ++ masked).toStream
       ).message.get
-    ) should equal(coffeeOnTheRocks)
+    ) should equal(coffeeIpsum)
   }
 }

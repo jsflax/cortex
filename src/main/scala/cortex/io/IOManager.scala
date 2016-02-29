@@ -19,9 +19,13 @@ abstract class IOManager(port: Int,
   // open new server socket on selected port
   lazy val server = {
     val ss = new ServerSocket()
-    ss.setReuseAddress(true)
+    try {
+      ss.setReuseAddress(true)
 
-    ss.bind(new InetSocketAddress(port))
+      ss.bind(new InetSocketAddress(port))
+    } catch {
+      case e: Exception => e.printStackTrace()
+    }
     ss
   }
 
@@ -43,7 +47,10 @@ abstract class IOManager(port: Int,
         ioLoop(socket)
       }
     } catch {
-      case e: Exception => log error e.getMessage; socket.close()
+      case e: Exception =>
+        log error e.getMessage
+        e.printStackTrace()
+        socket.close()
     }
   }
 

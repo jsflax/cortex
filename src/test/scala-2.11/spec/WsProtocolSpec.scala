@@ -1,5 +1,6 @@
 package spec
 
+import cortex.controller.HttpVerb.GET
 import cortex.controller.{WsController, ContentType}
 import cortex.io.ws.{WebSocket, WsProtocolManager}
 
@@ -8,21 +9,29 @@ import cortex.io.ws.{WebSocket, WsProtocolManager}
   */
 class WsProtocolSpec extends BaseSpec {
   override def ioManagers = Seq(
-    new WsProtocolManager[Any](8083) {
-      override def onSocketConnected(socket: WebSocket[Any]): Unit = {
+    new WsProtocolManager[String](8083) {
+      override def onSocketConnected(socket: WebSocket[String]): Unit = {
         println(socket.token)
       }
 
-      override def onMessageReceived(socket: WebSocket[Any],
+      override def onMessageReceived(socket: WebSocket[String],
                                      message: Array[Byte]): Unit = {
         println(new String(message))
       }
     }
   )
 
- controllers ++= Seq(
+  controllers ++= Seq(
     new WsController {
-      register("connect", req => { None }, ContentType.AllType)
+      register("connect", req => {
+        "blah blah!"
+      }, ContentType.AllType, GET)
     }
   )
+
+  "A socket" should "actually read the message" in {
+    synchronized {
+      wait()
+    }
+  }
 }

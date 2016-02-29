@@ -3,6 +3,9 @@ package cortex.io.ws
 import cortex.io.ws.MessageType.MessageType
 import cortex.util.log
 
+import scala.concurrent.Future
+import scala.language.postfixOps
+
 /**
   * Created by jasonflax on 2/17/16.
   */
@@ -27,7 +30,7 @@ private object CloseCode extends Enumeration {
 // The message types are defined in RFC 6455, section 11.8.
 object MessageType extends Enumeration {
   type MessageType = Int
-
+  val ContinuationFrame = 0
   // TextMessage denotes a text data message. The text message payload is
   // interpreted as UTF-8 encoded text data.
   val TextMessage = 1
@@ -82,12 +85,17 @@ class WsHandler[A](socket: WebSocket[A])
     }
 
     def readFrame(bytes: Stream[Byte]): Frame = {
+      println("Reading Frame")
+
       val isFinal = (bytes.head & FinalBit) != 0
       val opCode: MessageType = bytes.head & 0xf
 
+      println(s"FIN=$isFinal")
+      println(s"OpCode $opCode")
+
       opCode match {
         case TextMessage | BinaryMessage | PingMessage | PongMessage =>
-          var len = bytes(1) & 0x7f
+          var len = bytes(1) & 127.toByte
 
           Frame(
             isFinal = isFinal,
@@ -99,21 +107,24 @@ class WsHandler[A](socket: WebSocket[A])
                 case 126 =>
                   val data = bytes.slice(2, 4)
                   len = Array.tabulate(data.length) { i =>
-                    data(i) << ((data.length - 1 - i) * 8)
+                    0xff & data(i) << ((data.length - 1 - i) * 8)
                   }.reduce(_ | _)
+                  log e s"actual len: $len"
                   decode(bytes, len, 2)
                 case 127 =>
+                  log t "decoding 127b msg"
                   val data = bytes.slice(2, 9)
                   len = Array.tabulate(data.length) { i =>
-                    data(i) << ((data.length - 1 - i) * 8)
+                    0xff & data(i) << ((data.length - 1 - i) * 8)
                   }.reduce(_ | _)
-                  log e s" 127!!! $len"
                   decode(bytes, len, 7)
               }
             )
           )
         case CloseMessage =>
           Frame(isFinal, opCode, None)
+        case _ =>
+          Frame(isFinal = true, opCode, None)
       }
     }
   }
@@ -127,7 +138,8 @@ class WsHandler[A](socket: WebSocket[A])
                               offset: Int,
                               len: Int): Int = {
       Array.tabulate(amount) { i =>
-        frame(i + offset) = (len >> ((offset - 1 - i) * 8)) & 255
+        frame(i + offset) = ((len >> ((offset - 1 - i) * 8)) & 255).toByte
+        println(offset - 1 - i)
       }
       amount + offset
     }
@@ -136,15 +148,15 @@ class WsHandler[A](socket: WebSocket[A])
       var frameCount = 0
       val frame = new Array[Byte](10)
 
-      frame(0) = 129
+      frame(0) = 129.toByte
 
       bytes.length match {
         case n if n <= 125 =>
-          frame(1) = bytes.length
+          frame(1) = bytes.length.toByte
           frameCount = 2
         case n if n >= 126 && n <= 65535 =>
           frame(1) = 126
-          frameCount = tabulateBytes(frame, 2, 2, bytes.length)
+          frameCount = tabulateBytes(frame, amount = 2, offset = 2, bytes.length)
         case _ =>
           frame(1) = 127
           frameCount = tabulateBytes(frame, 8, 2, bytes.length)
@@ -159,19 +171,24 @@ class WsHandler[A](socket: WebSocket[A])
   private[ws] def listen() = {
     if (socket != null) {
       while (socket.isConnected) {
+
         val frame = WsReader.readFrame(
-          Stream.continually(socket.getInputStream.read)
+          Stream.continually(socket.getInputStream.read).map(_.toByte)
         )
 
         frame.messageType match {
           case TextMessage | BinaryMessage =>
-            log v s"Writing Text or Binary Message"
-            messageReceivedListener(
-              socket,
-              frame.message.get
-            )
+            if (frame.isFinal) {
+              log.e(s"Writing Text or Binary Message")
+              messageReceivedListener(
+                socket,
+                frame.message.get
+              )
+            } else {
+              println("Frame not final!")
+            }
           case CloseMessage =>
-            log v s"Writing Close, code: $CloseMessage"
+            log.e(s"Writing Close, code: $CloseMessage")
             socket.getOutputStream.write(
               WsWriter.writeFrame(
                 Frame(
@@ -184,11 +201,16 @@ class WsHandler[A](socket: WebSocket[A])
               )
             )
             socket.close()
+          case ContinuationFrame =>
+            if (!frame.isFinal) {
+
+            }
           case PingMessage | PongMessage =>
-            log v s"Writing Ping or Pong, code: $PongMessage"
+            log.e(s"Writing Ping or Pong, code: $PongMessage")
             WsWriter.writeFrame(frame)
         }
       }
+      log e "Socket Disconnected!"
     }
   }
 }
